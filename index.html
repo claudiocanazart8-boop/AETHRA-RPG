@@ -699,6 +699,11 @@ function fitView(){ animateCamera(fitBounds(), 500); }
    Veja o passo a passo completo na mensagem que acompanha este arquivo.
    Sem isso preenchido, o site funciona apenas como visor de mapa local
    (as telas de sala mostram um aviso explicando o que falta configurar). */
+  const firebaseConfig = {
+  apiKey: "AIzaSyDg4umOwwWkhxkduWi4fOafsU0V2oWoTpyU",
+  authDomain: "aethra-rpg.firebaseapp.com",
+  projectId: "aethra-rpg",
+};
 let fbApp=null, auth=null, db=null, myUid=null;
 let roomRef=null, charsRef=null;      // referências do Firestore (doc da sala / coleção de personagens)
 let charsUnsub=null, roomUnsub=null, pickUnsub=null; // funções para cancelar os listeners em tempo real
