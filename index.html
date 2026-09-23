@@ -699,12 +699,6 @@ function fitView(){ animateCamera(fitBounds(), 500); }
    Veja o passo a passo completo na mensagem que acompanha este arquivo.
    Sem isso preenchido, o site funciona apenas como visor de mapa local
    (as telas de sala mostram um aviso explicando o que falta configurar). */
-const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_PROJETO.firebaseapp.com",
-  projectId: "SEU_PROJETO",
-};
-
 let fbApp=null, auth=null, db=null, myUid=null;
 let roomRef=null, charsRef=null;      // referências do Firestore (doc da sala / coleção de personagens)
 let charsUnsub=null, roomUnsub=null, pickUnsub=null; // funções para cancelar os listeners em tempo real
