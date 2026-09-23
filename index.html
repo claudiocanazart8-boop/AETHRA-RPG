@@ -429,7 +429,7 @@ body{
 <!-- Firebase (usado apenas para a sala multiplayer — veja as instruções de configuração enviadas junto com este arquivo) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 
 <script>
 
@@ -694,7 +694,7 @@ function animateCamera(target, duration){
 }
 function fitView(){ animateCamera(fitBounds(), 500); }
 
-/* ---------------------- 4. SALA / FIREBASE (multiplayer) ----------------------
+/* ---------------------- 4. SALA / FIREBASE (multiplayer, via Firestore) ----------------------
    Preencha firebaseConfig com as credenciais do SEU projeto Firebase (gratuito).
    Veja o passo a passo completo na mensagem que acompanha este arquivo.
    Sem isso preenchido, o site funciona apenas como visor de mapa local
@@ -702,12 +702,12 @@ function fitView(){ animateCamera(fitBounds(), 500); }
 const firebaseConfig = {
   apiKey: "SUA_API_KEY",
   authDomain: "SEU_PROJETO.firebaseapp.com",
-  databaseURL: "https://SEU_PROJETO-default-rtdb.firebaseio.com",
   projectId: "SEU_PROJETO",
 };
 
 let fbApp=null, auth=null, db=null, myUid=null;
-let roomRef=null, charsRef=null, gmRef=null;
+let roomRef=null, charsRef=null;      // referências do Firestore (doc da sala / coleção de personagens)
+let charsUnsub=null, roomUnsub=null, pickUnsub=null; // funções para cancelar os listeners em tempo real
 const avatarImageCache={};
 const TOKEN_COLORS = ['#c99a4a','#4a90d9','#5f8a5a','#b0473f','#a06fd0','#e7d9b6'];
 
@@ -717,7 +717,7 @@ function initFirebase(){
   if(!fbApp){
     fbApp = firebase.initializeApp(firebaseConfig);
     auth = firebase.auth();
-    db = firebase.database();
+    db = firebase.firestore();
   }
   return true;
 }
@@ -753,8 +753,12 @@ function canEditChar(id){
 }
 
 function attachRoomListeners(){
-  charsRef.on('value', snap=>{
-    App.characters = snap.val() || {};
+  if(charsUnsub) charsUnsub();
+  if(roomUnsub) roomUnsub();
+  charsUnsub = charsRef.onSnapshot(snap=>{
+    const obj={};
+    snap.forEach(doc=>{ obj[doc.id]=doc.data(); });
+    App.characters = obj;
     Object.keys(App.characters).forEach(id=>{
       const c = App.characters[id];
       if(c && c.avatar){
@@ -769,7 +773,7 @@ function attachRoomListeners(){
     if(document.getElementById('fichaTab').classList.contains('show')) renderFichaCard();
     render();
   });
-  gmRef.on('value', snap=>{ App.gmUid = snap.val()||null; });
+  roomUnsub = roomRef.onSnapshot(doc=>{ App.gmUid = doc.exists ? (doc.data().gmUid||null) : null; });
 }
 
 /* ---------------------- 4b. PERSONAGENS (tokens do mapa) ---------------------- */
@@ -784,7 +788,7 @@ function charAt(wx,wy){
 }
 function gmCreateCharacter(isNPC){
   if(!charsRef) return;
-  const id = charsRef.push().key;
+  const id = charsRef.doc().id;
   const cam = state().camera;
   const n = Object.keys(App.characters||{}).length;
   const data = {
@@ -796,7 +800,7 @@ function gmCreateCharacter(isNPC){
     x:cam.x, y:cam.y, mapId:App.sceneId,
     ownerUid:null, isNPC:!!isNPC, locked:false,
   };
-  charsRef.child(id).set(data);
+  charsRef.doc(id).set(data);
   App.fichaSelectedId=id;
   closeGearMenu();
   switchTab('ficha');
@@ -1210,7 +1214,8 @@ function drawTokenAvatar(c){
     ctx.restore();
   }
 }
-  /* ---------------------- 6. ENTRADA ---------------------- */
+
+/* ---------------------- 6. ENTRADA ---------------------- */
 
 let isPointerDown=false, panStart=null, camStart=null, lastClickInfo=null, dragMoved=false;
 
@@ -1304,7 +1309,7 @@ function onUp(e){
       App.fichaSelectedId = App.drag.id;
       switchTab('ficha');
     } else if(c && charsRef){
-      charsRef.child(App.drag.id).update({x:c.x, y:c.y});
+      charsRef.doc(App.drag.id).update({x:c.x, y:c.y});
     }
   } else if(App.drag && App.drag.mode==='charLook'){
     if(!dragMoved) showTokenInfoPopover(App.drag.id, getScreenPos(e));
@@ -1500,7 +1505,7 @@ function wireFichaInputs(id, editable){
     const handler = ()=>{
       let v = el.value;
       if(isNumber){ v = v===''? 0 : Number(v); if(Number.isNaN(v)) v=0; }
-      charsRef.child(id).update({[field]:v});
+      charsRef.doc(id).update({[field]:v});
     };
     el.addEventListener('change', handler);
   };
@@ -1517,22 +1522,22 @@ function wireFichaInputs(id, editable){
     avatarInput.addEventListener('change', (e)=>{
       const file = e.target.files[0];
       if(!file) return;
-      resizeImageToDataURL(file, 128, (dataUrl)=> charsRef.child(id).update({avatar:dataUrl}));
+      resizeImageToDataURL(file, 128, (dataUrl)=> charsRef.doc(id).update({avatar:dataUrl}));
     });
   }
   if(isGM()){
     const lockedEl = document.getElementById('fLocked');
-    if(lockedEl) lockedEl.addEventListener('change', ()=> charsRef.child(id).update({locked:lockedEl.checked}));
+    if(lockedEl) lockedEl.addEventListener('change', ()=> charsRef.doc(id).update({locked:lockedEl.checked}));
     const placeBtn = document.getElementById('fPlaceHere');
     if(placeBtn) placeBtn.addEventListener('click', ()=>{
       const cam = state().camera;
-      charsRef.child(id).update({mapId:App.sceneId, x:cam.x, y:cam.y});
+      charsRef.doc(id).update({mapId:App.sceneId, x:cam.x, y:cam.y});
       switchTab('mapa');
     });
     const delBtn = document.getElementById('fDeleteChar');
     if(delBtn) delBtn.addEventListener('click', ()=>{
       if(confirm('Excluir este personagem/NPC permanentemente?')){
-        charsRef.child(id).remove();
+        charsRef.doc(id).delete();
         App.fichaSelectedId=null;
         renderFichaCard();
       }
@@ -1616,7 +1621,7 @@ document.getElementById('btnContinueRoom').addEventListener('click', ()=>{
   showScreen('screenRole');
 });
 document.getElementById('backFromRole').addEventListener('click', ()=> showScreen('screenRoom'));
-document.getElementById('backFromPick').addEventListener('click', ()=>{ if(charsRef) charsRef.off(); showScreen('screenRole'); });
+document.getElementById('backFromPick').addEventListener('click', ()=>{ if(pickUnsub){ pickUnsub(); pickUnsub=null; } showScreen('screenRole'); });
 document.getElementById('backFromGmCode').addEventListener('click', ()=> showScreen('screenRole'));
 
 document.getElementById('btnRolePlayer').addEventListener('click', ()=> goToPickCharacter());
@@ -1628,18 +1633,18 @@ document.getElementById('btnConfirmGm').addEventListener('click', async ()=>{
   try{
     await ensureAuth();
     App.room = normalizeRoom(App.pendingRoom);
-    roomRef = db.ref('rooms/'+App.room);
-    charsRef = roomRef.child('characters');
-    gmRef = roomRef.child('gmUid');
+    roomRef = db.collection('rooms').doc(App.room);
+    charsRef = roomRef.collection('characters');
     const code = document.getElementById('inputGmCode').value.trim();
-    const snap = await gmRef.once('value');
-    if(snap.exists() && snap.val()!==myUid){
+    const snap = await roomRef.get();
+    const curGm = snap.exists ? (snap.data().gmUid||null) : null;
+    if(curGm && curGm!==myUid){
       setScreenError('gmError','Esta sala já possui um Mestre. Peça o código combinado a ele, ou use outro código de sala.');
       return;
     }
-    if(!snap.exists()){
+    if(!curGm){
       if(!code){ setScreenError('gmError','Defina um código de Mestre para esta sala (combine-o com seu grupo).'); return; }
-      await gmRef.set(myUid);
+      await roomRef.set({gmUid:myUid}, {merge:true});
     }
     App.role='gm'; App.charId=null;
     persistSession();
@@ -1656,11 +1661,13 @@ async function goToPickCharacter(){
   try{
     await ensureAuth();
     App.room = normalizeRoom(App.pendingRoom);
-    roomRef = db.ref('rooms/'+App.room);
-    charsRef = roomRef.child('characters');
-    gmRef = roomRef.child('gmUid');
-    charsRef.on('value', snap=>{
-      App.pickCache = snap.val() || {};
+    roomRef = db.collection('rooms').doc(App.room);
+    charsRef = roomRef.collection('characters');
+    if(pickUnsub) pickUnsub();
+    pickUnsub = charsRef.onSnapshot(snap=>{
+      const obj={};
+      snap.forEach(doc=>{ obj[doc.id]=doc.data(); });
+      App.pickCache = obj;
       renderCharPickList();
     });
   }catch(err){
@@ -1693,11 +1700,12 @@ function renderCharPickList(){
   });
 }
 async function claimCharacter(id){
-  const ref = charsRef.child(id).child('ownerUid');
-  const snap = await ref.once('value');
-  if(snap.exists() && snap.val() && snap.val()!==myUid) throw new Error('taken');
-  await ref.set(myUid);
-  charsRef.off('value');
+  const docRef = charsRef.doc(id);
+  const snap = await docRef.get();
+  const cur = snap.exists ? snap.data() : {};
+  if(cur.ownerUid && cur.ownerUid!==myUid) throw new Error('taken');
+  await docRef.update({ownerUid:myUid});
+  if(pickUnsub){ pickUnsub(); pickUnsub=null; }
   App.role='player'; App.charId=id;
   persistSession();
   attachRoomListeners();
@@ -1728,9 +1736,8 @@ function init(){
       try{
         await ensureAuth();
         App.room=saved.room; App.role=saved.role; App.charId=saved.charId||null;
-        roomRef = db.ref('rooms/'+App.room);
-        charsRef = roomRef.child('characters');
-        gmRef = roomRef.child('gmUid');
+        roomRef = db.collection('rooms').doc(App.room);
+        charsRef = roomRef.collection('characters');
         attachRoomListeners();
         enterApp();
       }catch(err){ alert('Não foi possível reconectar: '+err.message); }
@@ -1742,6 +1749,7 @@ window.addEventListener('load', init);
 </script>
 </body>
 </html>
+
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
