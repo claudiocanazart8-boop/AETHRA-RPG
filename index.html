@@ -727,11 +727,24 @@ function initFirebase(){
 }
 function ensureAuth(){
   if(myUid) return Promise.resolve(myUid);
+
   return new Promise((resolve,reject)=>{
-    const off = auth.onAuthStateChanged(user=>{
-      if(user){ myUid=user.uid; off(); resolve(myUid); }
+    auth.onAuthStateChanged(user=>{
+      if(user){
+        myUid = user.uid;
+        resolve(myUid);
+      }
     });
-    auth.signInAnonymously().catch(reject);
+
+    auth.signInAnonymously()
+      .then(userCredential=>{
+        myUid = userCredential.user.uid;
+        resolve(myUid);
+      })
+      .catch(err=>{
+        console.error("ERRO FIREBASE AUTH:", err);
+        reject(err);
+      });
   });
 }
 function normalizeRoom(s){ return (s||'').trim().toLowerCase().replace(/[^a-z0-9\-_]+/g,'-'); }
