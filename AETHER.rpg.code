@@ -1,0 +1,1955 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AETHRA — Mapa do Mestre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1a1410;
+  --ink-2:#241b14;
+  --panel:#2a2018;
+  --panel-2:#332619;
+  --edge:#4a3823;
+  --parchment:#e7d9b6;
+  --parchment-dim:#c9b98d;
+  --gold:#c99a4a;
+  --gold-dim:#8a6a34;
+  --ember:#b3491f;
+  --blood:#7a2e2e;
+  --sylvarin:#3f5d43;
+  --kharDurim:#5b6b73;
+  --varkhan:#b99a5f;
+  --morvath:#5a4258;
+  --river:#4d7c8e;
+  --text-soft:#d8cba9;
+  --danger:#c0483c;
+  --ok:#5f8a5a;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;margin:0;padding:0;}
+body{
+  font-family:'Spectral',serif;
+  background:var(--ink);
+  color:var(--text-soft);
+  overflow:hidden;
+  height:100vh;
+  width:100vw;
+  display:flex;
+  flex-direction:column;
+}
+h1,h2,h3,.display{font-family:'Cinzel',serif;letter-spacing:.02em;}
+button{font-family:'Spectral',serif;}
+::selection{background:var(--gold-dim);}
+
+/* ---------- TOP BAR ---------- */
+#topbar{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:8px 14px;
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  border-bottom:2px solid var(--edge);
+  flex:0 0 auto;
+  z-index:20;
+  flex-wrap:wrap;
+}
+#brand{
+  font-family:'Cinzel',serif;
+  font-size:20px;
+  font-weight:700;
+  color:var(--gold);
+  letter-spacing:.12em;
+  padding-right:10px;
+  border-right:1px solid var(--edge);
+  margin-right:4px;
+}
+#brand small{
+  display:block;
+  font-family:'Spectral',serif;
+  font-size:10px;
+  color:var(--parchment-dim);
+  letter-spacing:.05em;
+  font-weight:400;
+}
+.map-name{
+  font-size:14px;
+  color:var(--parchment);
+  padding:5px 10px;
+  background:var(--ink-2);
+  border:1px solid var(--edge);
+  border-radius:3px;
+}
+.btn{
+  background:var(--panel-2);
+  color:var(--text-soft);
+  border:1px solid var(--edge);
+  padding:6px 12px;
+  border-radius:3px;
+  cursor:pointer;
+  font-size:13px;
+  transition:background .12s,border-color .12s;
+  white-space:nowrap;
+}
+.btn:hover{background:var(--edge);border-color:var(--gold-dim);}
+.btn:active{transform:translateY(1px);}
+.btn.primary{background:var(--gold-dim);border-color:var(--gold);color:#1a1410;font-weight:600;}
+.btn.primary:hover{background:var(--gold);}
+.btn.danger{border-color:var(--blood);}
+.btn.danger:hover{background:var(--blood);color:#fff;}
+.btn.on{background:var(--sylvarin);border-color:#6f9a76;color:#eafaea;}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.spacer{flex:1 1 auto;}
+#modeToggle{
+  display:flex;
+  border:1px solid var(--edge);
+  border-radius:4px;
+  overflow:hidden;
+}
+#modeToggle button{
+  border:none;
+  border-radius:0;
+  padding:6px 14px;
+}
+#modeToggle button.active{background:var(--gold);color:#1a1410;font-weight:700;}
+#modeToggle button:not(.active){background:var(--ink-2);}
+
+/* ---------- MAIN LAYOUT ---------- */
+#main{
+  flex:1 1 auto;
+  display:flex;
+  min-height:0;
+}
+#toolbar{
+  flex:0 0 56px;
+  background:var(--panel);
+  border-right:2px solid var(--edge);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:10px 0;
+  gap:4px;
+  overflow-y:auto;
+}
+.tool{
+  width:40px;height:40px;
+  display:flex;align-items:center;justify-content:center;
+  background:transparent;
+  border:1px solid transparent;
+  border-radius:6px;
+  color:var(--parchment-dim);
+  font-size:19px;
+  cursor:pointer;
+}
+.tool:hover{background:var(--panel-2);color:var(--parchment);}
+.tool.active{background:var(--gold-dim);border-color:var(--gold);color:#1a1410;}
+.tool:disabled{opacity:.25;cursor:not-allowed;}
+.tool-sep{width:28px;height:1px;background:var(--edge);margin:6px 0;}
+
+#stage-wrap{
+  flex:1 1 auto;
+  position:relative;
+  min-width:0;
+  background:#0d0906;
+  overflow:hidden;
+}
+#stage{
+  display:block;
+  width:100%;
+  height:100%;
+  cursor:grab;
+}
+#stage.tool-cursor{cursor:crosshair;}
+#stage.dragging{cursor:grabbing;}
+
+#hint{
+  position:absolute;
+  top:10px;left:50%;
+  transform:translateX(-50%);
+  background:rgba(26,20,16,.85);
+  border:1px solid var(--edge);
+  color:var(--parchment-dim);
+  font-size:12px;
+  padding:5px 12px;
+  border-radius:3px;
+  pointer-events:none;
+  z-index:5;
+}
+
+/* ---- Moldura decorativa de cartografia (somente Mapa Mundial) ---- */
+#mapFrame{
+  position:absolute; inset:10px;
+  border:2px solid rgba(201,154,74,.55);
+  outline:1px solid rgba(201,154,74,.22);
+  outline-offset:6px;
+  pointer-events:none;
+  z-index:4;
+}
+#mapFrame .corner{
+  position:absolute;
+  width:30px;height:30px;
+  color:rgba(201,154,74,.75);
+  font-size:22px;
+  line-height:1;
+}
+#mapFrame .corner.tl{top:-13px;left:-13px;}
+#mapFrame .corner.tr{top:-13px;right:-13px;}
+#mapFrame .corner.bl{bottom:-13px;left:-13px;}
+#mapFrame .corner.br{bottom:-13px;right:-13px;}
+
+#titlePlate{
+  position:absolute; top:22px; left:22px;
+  z-index:6; pointer-events:none;
+  background:linear-gradient(135deg, rgba(26,20,16,.88), rgba(26,20,16,.68));
+  border:1px solid rgba(201,154,74,.5);
+  border-radius:4px;
+  padding:10px 22px 12px;
+  max-width:300px;
+}
+#titlePlate .t1{
+  font-family:'Cinzel',serif; font-weight:700; font-size:30px;
+  letter-spacing:.16em; color:var(--gold);
+  text-shadow:0 2px 6px rgba(0,0,0,.6);
+}
+#titlePlate .t2{
+  font-family:'Cinzel',serif; font-size:11px; letter-spacing:.22em;
+  color:var(--parchment-dim); margin-top:2px;
+}
+
+#mapQuote{
+  position:absolute; top:120px; left:22px;
+  z-index:6; pointer-events:none;
+  background:rgba(26,20,16,.78);
+  border:1px solid rgba(201,154,74,.35);
+  border-radius:3px;
+  padding:10px 14px;
+  max-width:190px;
+  font-style:italic; font-size:12px; line-height:1.5;
+  color:var(--parchment-dim);
+}
+
+#mapCompass{
+  position:absolute; top:22px; right:22px;
+  z-index:6; pointer-events:none;
+  width:84px; height:84px;
+}
+
+#mapLegend{
+  position:absolute; bottom:22px; right:22px;
+  z-index:6; pointer-events:none;
+  background:rgba(26,20,16,.85);
+  border:1px solid rgba(201,154,74,.45);
+  border-radius:4px;
+  padding:10px 14px;
+  font-size:11.5px;
+  color:var(--parchment-dim);
+  max-width:190px;
+}
+#mapLegend h4{
+  margin:0 0 6px; font-family:'Cinzel',serif; font-size:12px;
+  letter-spacing:.1em; color:var(--gold); text-align:center;
+  border-bottom:1px solid rgba(201,154,74,.3); padding-bottom:5px;
+}
+#mapLegend .lrow{display:flex; align-items:center; gap:7px; margin:3px 0;}
+#mapLegend .lrow .sym{width:16px; text-align:center; font-size:12px; flex:0 0 auto;}
+
+#mapScale{
+  position:absolute; bottom:22px; left:22px;
+  z-index:6; pointer-events:none;
+  background:rgba(26,20,16,.78);
+  border:1px solid rgba(201,154,74,.35);
+  border-radius:3px;
+  padding:8px 12px;
+  font-size:10.5px;
+  color:var(--parchment-dim);
+  text-align:center;
+}
+#mapScale .bar{
+  width:120px; height:6px; margin-top:4px;
+  background:repeating-linear-gradient(90deg, var(--gold) 0 15px, transparent 15px 30px);
+  border:1px solid var(--gold-dim);
+}
+
+#rightpanel{
+  flex:0 0 268px;
+  background:var(--panel);
+  border-left:2px solid var(--edge);
+  display:flex;
+  flex-direction:column;
+  overflow-y:auto;
+}
+.panel-section{
+  border-bottom:1px solid var(--edge);
+  padding:12px 14px;
+}
+.panel-section h3{
+  font-size:13px;
+  margin:0 0 8px 0;
+  color:var(--gold);
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.layer-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:4px 0;
+  font-size:13px;
+}
+.layer-row label{cursor:pointer;flex:1;}
+.switch{
+  width:34px;height:18px;
+  background:var(--ink-2);
+  border:1px solid var(--edge);
+  border-radius:10px;
+  position:relative;
+  cursor:pointer;
+  flex:0 0 auto;
+}
+.switch .knob{
+  position:absolute;top:1px;left:1px;
+  width:14px;height:14px;border-radius:50%;
+  background:var(--parchment-dim);
+  transition:left .12s;
+}
+.switch.on{background:var(--sylvarin);border-color:#6f9a76;}
+.switch.on .knob{left:16px;background:#eafaea;}
+
+#objectInfo{font-size:13px;}
+#objectInfo .empty{color:var(--parchment-dim);font-style:italic;}
+#objectInfo label{display:block;font-size:11px;color:var(--parchment-dim);margin:8px 0 2px;text-transform:uppercase;letter-spacing:.05em;}
+#objectInfo input[type=text],#objectInfo textarea,#objectInfo select{
+  width:100%;
+  background:var(--ink-2);
+  border:1px solid var(--edge);
+  color:var(--text-soft);
+  padding:6px 8px;
+  border-radius:3px;
+  font-family:'Spectral',serif;
+  font-size:13px;
+}
+#objectInfo textarea{resize:vertical;min-height:50px;}
+.row2{display:flex;gap:6px;}
+.row2>div{flex:1;}
+/* ---------- BOTTOM BAR ---------- */
+#bottombar{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:6px 14px;
+  background:var(--panel-2);
+  border-top:2px solid var(--edge);
+  font-size:12px;
+  color:var(--parchment-dim);
+  flex-wrap:wrap;
+}
+#bottombar .grp{display:flex;align-items:center;gap:6px;}
+#zoomSlider{width:120px;accent-color:var(--gold);}
+#coords{min-width:130px;}
+
+/* ---------- MODAL ---------- */
+#modalOverlay{
+  position:fixed;inset:0;
+  background:rgba(10,7,5,.72);
+  display:none;
+  align-items:center;justify-content:center;
+  z-index:100;
+}
+#modalOverlay.show{display:flex;}
+#modalBox{
+  background:var(--panel);
+  border:1px solid var(--gold-dim);
+  border-radius:6px;
+  padding:20px 22px;
+  width:320px;
+  max-width:90vw;
+}
+#modalBox h3{margin:0 0 12px 0;color:var(--gold);font-size:16px;}
+#modalBox label{display:block;font-size:11px;color:var(--parchment-dim);margin:10px 0 3px;text-transform:uppercase;letter-spacing:.05em;}
+#modalBox input,#modalBox select,#modalBox textarea{
+  width:100%;background:var(--ink-2);border:1px solid var(--edge);color:var(--text-soft);
+  padding:7px 9px;border-radius:3px;font-family:'Spectral',serif;font-size:13px;
+}
+#modalBox .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+
+/* Token type swatches for the add-token modal */
+.type-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+.type-chip{
+  padding:5px 9px;border:1px solid var(--edge);border-radius:14px;
+  font-size:12px;cursor:pointer;background:var(--ink-2);
+}
+.type-chip.sel{background:var(--gold-dim);color:#1a1410;border-color:var(--gold);font-weight:600;}
+
+.toast{
+  position:fixed;bottom:56px;left:50%;transform:translateX(-50%);
+  background:var(--gold);color:#1a1410;font-weight:600;font-size:13px;
+  padding:8px 16px;border-radius:4px;z-index:200;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.toast.show{opacity:1;}
+
+@media (max-width:900px){
+  #rightpanel{flex-basis:220px;}
+  #brand{font-size:16px;}
+}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div id="brand">AETHRA<small>Mapa do Mestre</small></div>
+  <div class="map-name" id="mapNameLabel">Mundo de Aethra</div>
+  <button class="btn" id="btnGoWorld" title="Voltar ao mapa mundial">🌍 Mundo</button>
+  <div class="spacer"></div>
+  <button class="btn" id="btnNew">📄 Novo</button>
+  <button class="btn" id="btnSave">💾 Salvar</button>
+  <button class="btn" id="btnLoad">📂 Carregar</button>
+  <button class="btn" id="btnExport">⬇ Exportar</button>
+  <button class="btn" id="btnImport">⬆ Importar</button>
+  <input type="file" id="fileImport" accept=".json" style="display:none">
+  <button class="btn danger" id="btnReset">↺ Resetar</button>
+  <div id="modeToggle">
+    <button id="modeGM" class="active">🛡 Mestre</button>
+    <button id="modeVocesData">👥 Jogador</button>
+  </div>
+</div>
+
+<div id="main">
+  <div id="toolbar">
+    <button class="tool active" data-tool="select" title="Selecionar / Mover mapa">↖</button>
+    <button class="tool" data-tool="pan" title="Mover o mapa (Pan)">✋</button>
+    <div class="tool-sep"></div>
+    <button class="tool" data-tool="draw" title="Desenhar" data-gm="1">✏️</button>
+    <button class="tool" data-tool="erase" title="Apagar" data-gm="1">🧹</button>
+    <button class="tool" data-tool="line" title="Linha" data-gm="1">📏</button>
+    <button class="tool" data-tool="rect" title="Retângulo" data-gm="1">▭</button>
+    <button class="tool" data-tool="circle" title="Círculo" data-gm="1">◯</button>
+    <div class="tool-sep"></div>
+    <button class="tool" data-tool="text" title="Texto" data-gm="1">🔤</button>
+    <button class="tool" data-tool="pin" title="Pin / Marcador" data-gm="1">📍</button>
+    <button class="tool" data-tool="addToken" title="Adicionar Token">➕</button>
+    <div class="tool-sep"></div>
+    <button class="tool" data-tool="revealFog" title="Revelar névoa" data-gm="1">🔆</button>
+    <button class="tool" data-tool="hideFog" title="Esconder névoa" data-gm="1">🌑</button>
+  </div>
+
+  <div id="stage-wrap">
+    <canvas id="stage"></canvas>
+    <div id="hint">Arraste para mover · Roda do mouse para zoom · Duplo-clique em Brumafria para entrar na vila</div>
+
+    <div id="mapFrame">
+      <div class="corner tl">❖</div><div class="corner tr">❖</div>
+      <div class="corner bl">❖</div><div class="corner br">❖</div>
+    </div>
+    <div id="titlePlate">
+      <div class="t1">AETHRA</div>
+      <div class="t2">TERRAS ANTIGAS, NOVOS DESTINOS</div>
+    </div>
+    <div id="mapQuote">"Mesmo após a Ruptura, a vida ainda encontra caminho."</div>
+    <div id="mapCompass">
+      <svg viewBox="0 0 100 100" width="84" height="84">
+        <circle cx="50" cy="50" r="46" fill="rgba(26,20,16,.7)" stroke="#c99a4a" stroke-width="1.5"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#8a6a34" stroke-width="1"/>
+        <g stroke="#c99a4a" stroke-width="1">
+          <line x1="50" y1="8" x2="50" y2="92"/>
+          <line x1="8" y1="50" x2="92" y2="50"/>
+        </g>
+        <polygon points="50,14 44,50 50,50" fill="#c99a4a"/>
+        <polygon points="50,14 56,50 50,50" fill="#8a6a34"/>
+        <polygon points="50,86 44,50 50,50" fill="#8a6a34"/>
+        <polygon points="50,86 56,50 50,50" fill="#c99a4a"/>
+        <text x="50" y="14" fill="#e7d9b6" font-size="11" font-family="Cinzel,serif" text-anchor="middle">N</text>
+        <text x="50" y="95" fill="#c9b98d" font-size="9" font-family="Cinzel,serif" text-anchor="middle">S</text>
+        <text x="6" y="53" fill="#c9b98d" font-size="9" font-family="Cinzel,serif" text-anchor="middle">O</text>
+        <text x="94" y="53" fill="#c9b98d" font-size="9" font-family="Cinzel,serif" text-anchor="middle">L</text>
+      </svg>
+    </div>
+    <div id="mapLegend">
+      <h4>LEGENDA</h4>
+      <div class="lrow"><span class="sym">👑</span>Capital</div>
+      <div class="lrow"><span class="sym">🏰</span>Cidade</div>
+      <div class="lrow"><span class="sym">🏘️</span>Vila</div>
+      <div class="lrow"><span class="sym">🛡️</span>Fortaleza</div>
+      <div class="lrow"><span class="sym">🏚️</span>Ruínas Antigas</div>
+      <div class="lrow"><span class="sym">◆</span>Ponto de Interesse</div>
+      <div class="lrow"><span class="sym">━</span>Estrada Principal</div>
+      <div class="lrow"><span class="sym">┄</span>Estrada Secundária</div>
+      <div class="lrow"><span class="sym">≈</span>Rio / Lago</div>
+      <div class="lrow"><span class="sym">▲</span>Montanha</div>
+      <div class="lrow"><span class="sym">🌲</span>Floresta</div>
+    </div>
+    <div id="mapScale">0 &nbsp; 250 &nbsp; 500<div class="bar"></div>Léguas</div>
+  </div>
+
+  <div id="rightpanel">
+    <div class="panel-section">
+      <h3>Camadas</h3>
+      <div id="layerList"></div>
+    </div>
+    <div class="panel-section" style="flex:1;">
+      <h3>Seleção</h3>
+      <div id="objectInfo"><div class="empty">Nada selecionado. Clique em um token, marcador ou desenho.</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="bottombar">
+  <div class="grp">
+    <span>Zoom</span>
+    <input type="range" id="zoomSlider" min="20" max="400" value="100">
+    <span id="zoomLabel">100%</span>
+  </div>
+  <div class="grp" id="coords">x:0 y:0</div>
+  <div class="grp">
+    <button class="btn" id="btnGrid">▦ Grade</button>
+    <button class="btn on" id="btnFogMaster">🌫 Névoa</button>
+  </div>
+  <div class="grp" id="gmFogControls">
+    <button class="btn" id="btnRevealAll">Revelar Tudo</button>
+    <button class="btn" id="btnClearExplore">Limpar Exploração</button>
+  </div>
+  <div class="spacer"></div>
+  <div class="grp" id="statusMsg"></div>
+</div>
+
+<div id="modalOverlay">
+  <div id="modalBox"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* =========================================================================
+   AETHRA — mapa interativo de RPG de mesa
+   Organização do código:
+   1. Estado global / dados dos mapas (Mundo, Brumafria)
+   2. Câmera (pan/zoom)
+   3. Grade
+   4. Névoa de guerra (Fog of War)
+   5. Tokens
+   6. Desenhos / marcadores (editor)
+   7. Salvamento (localStorage + import/export JSON)
+   8. Renderização (Canvas)
+   9. Entrada (mouse/touch) e ligação com a interface
+   ========================================================================= */
+
+/* ---------------------- 1. ESTADO GLOBAL E DADOS DE MAPA ---------------------- */
+
+const App = {
+  mode: 'gm', // 'gm' | 'player'
+  currentSceneId: 'world',
+  tool: 'select',
+  toastTimer: null,
+  layers: {
+    terrain:true, roads:true, water:true, buildings:true,
+    locations:true, tokens:true, drawings:true, grid:false,
+    fog:true, gmInfo:true
+  },
+  selected: null, // {kind:'token'|'marker'|'drawing', ref}
+  drag: null,     // active drag/draw operation
+  fogBrush: 46,
+};
+
+// ---- Definição geométrica do MUNDO (nível regional/mundial) ----
+// Espaço de mundo: 1600 x 1000 unidades.
+const WORLD = {
+  id:'world',
+  name:'Mundo de Aethra',
+  w:1600, h:1000,
+  gridSize:50,
+  // Contorno único do continente (o "molde" sobre o qual as regiões se encaixam,
+  // como no mapa de referência — um único bloco de terra, não ilhas separadas)
+  continent:[[220,140],[420,90],[650,80],[820,110],[980,90],[1150,120],[1300,160],
+             [1430,260],[1470,420],[1440,560],[1360,680],[1250,760],[1080,820],
+             [900,850],[700,830],[560,800],[430,760],[300,680],[210,560],[160,420],[170,280]],
+  oceanLabels:[
+    {name:'MAR DE NÉVOAS', x:620, y:60},
+    {name:'MAR DO OCASO', x:70, y:480},
+    {name:'MAR SERENO', x:760, y:900},
+    {name:'MAR DA RUPTURA', x:1440, y:780},
+  ],
+  islands:[
+    {name:'Ilhas Serpente', x:250, y:760, cl:[[0,0],[30,10],[55,-6],[80,18]]},
+    {name:'Ilhas Aurora', x:640, y:920, cl:[[0,0],[26,8],[50,-4]]},
+    {name:'Ilhas Esquecidas', x:1020, y:930, cl:[[0,0],[24,-10],[48,6],[70,-8]]},
+  ],
+  regions:[
+    {name:'Sylvarin', sub:'A Floresta Eterna', color:'#3f6b45',
+     pts:[[220,140],[420,90],[480,180],[430,260],[400,340],[330,440],[300,560],[210,560],[160,420],[170,280]]},
+    {name:'Khar-Durim', sub:'Montanhas de Ferro', color:'#6b7680',
+     pts:[[420,90],[650,80],[820,110],[980,90],[1000,260],[850,330],[650,320],[480,260],[430,180]]},
+    {name:'Morvath', sub:'Terras da Ruptura', color:'#4a2f3a',
+     pts:[[980,90],[1150,120],[1300,160],[1430,260],[1470,420],[1380,460],[1250,400],[1120,320],[1000,260]]},
+    {name:'Valedorn', sub:'O Reino dos Homens', color:'#a9863f',
+     pts:[[430,180],[480,260],[650,320],[850,330],[1000,260],[1120,320],[1080,480],[1000,600],
+          [850,680],[700,650],[560,560],[480,480],[400,340],[430,260]]},
+    {name:'Varkhan', sub:'Estepes Livres', color:'#bd9c5c',
+     pts:[[1120,320],[1250,400],[1380,460],[1440,560],[1360,680],[1250,760],[1080,700],[1000,600],[1080,480]]},
+    {name:'Orthen', sub:'Os Reinos Caídos', color:'#7a4a3c',
+     pts:[[300,560],[330,440],[400,340],[480,480],[560,560],[700,650],[560,800],[430,760],[300,680],[210,560]]},
+  ],
+  rivers:[
+    // Rio Caez, nascendo em Khar-Durim e cortando Valedorn até Porto Real
+    [[680,330],[660,400],[690,460],[650,520],[670,590],[630,660],[600,700]],
+    [[500,470],[540,540],[560,560]], // afluente vindo de perto de Brumafria
+  ],
+  lakes:[
+    {name:'Lago Miraluz', x:340, y:480, r:30},
+    {name:'Lago Protegido', x:955, y:610, r:26},
+  ],
+  mountains:[ // cordilheira de Khar-Durim, em fileiras cobrindo a região
+    {x:480,y:150},{x:540,y:120},{x:610,y:105},{x:690,y:100},{x:760,y:115},{x:830,y:135},{x:900,y:130},{x:960,y:150},
+    {x:520,y:190},{x:590,y:165},{x:660,y:150},{x:740,y:165},{x:810,y:190},{x:880,y:180},{x:940,y:200},
+    {x:560,y:240},{x:630,y:220},{x:700,y:230},{x:770,y:250},{x:840,y:250},{x:900,y:240},
+  ],
+  forests:[ // Sylvarin — floresta densa, mais cerrada perto da capital élfica
+    {x:230,y:190},{x:290,y:160},{x:350,y:200},{x:230,y:250},{x:300,y:260},{x:360,y:250},
+    {x:220,y:310},{x:280,y:320},{x:340,y:330},{x:400,y:300},{x:210,y:380},{x:270,y:400},
+    {x:330,y:400},{x:390,y:390},{x:240,y:440},{x:300,y:470},{x:350,y:460},
+    // manchas de mata nas bordas de Valedorn e Orthen (como no mapa de referência)
+    {x:470,y:300},{x:520,y:290},{x:480,y:400},{x:360,y:520},{x:410,y:560},
+  ],
+  desert:[ // Varkhan — deserto/estepe pontilhada de dunas
+    {x:1180,y:520},{x:1250,y:560},{x:1150,y:600},{x:1300,y:500},{x:1080,y:560},
+    {x:1220,y:640},{x:1310,y:600},{x:1180,y:680},
+  ],
+  corrupted:[ // Morvath — fendas e terra corrompida ao redor de O Olho Partido
+    {x:1230,y:250},{x:1290,y:290},{x:1200,y:320},{x:1340,y:250},{x:1350,y:340},{x:1270,y:360}
+  ],
+  crater:{x:1300,y:300,r:34}, // O Olho Partido
+  roads:[
+    // estradas principais (reino de Valedorn ao centro, ligando todas as regiões)
+    [[750,470],[700,410],[650,370]],            // Auregard - Vale de Eldermoor
+    [[650,370],[600,340]],                       // Vale de Eldermoor - Brumafria
+    [[750,470],[850,500],[955,610]],             // Auregard - Vilaris - Lago Protegido
+    [[750,470],[680,560],[630,660],[600,700]],   // Auregard - Rio Caez - Porto Real
+    [[750,470],[700,330],[650,280]],             // Auregard - Thorgar (Khar-Durim)
+    [[750,470],[600,470],[500,470]],             // Auregard - Campos Dourados
+    [[750,470],[880,450],[1000,430]],            // Auregard - Colinas Cinzentas
+    [[1000,430],[1120,450],[1220,480]],          // rota das estepes - Kragor
+    [[500,470],[430,540],[400,600]],             // Campos Dourados - Terras de Orthen
+  ],
+  locations:[
+    {id:'auregard', name:'Auregard', type:'capital', x:750, y:470, region:'Valedorn', desc:'Capital do Reino de Valedorn, sede do trono dos Homens.'},
+    {id:'eldermoor', name:'Vale de Eldermoor', type:'poi', x:650, y:370, region:'Valedorn', desc:'Vale verdejante entre colinas, no caminho para Brumafria.'},
+    {id:'brumafria', name:'Brumafria', type:'village', x:600, y:340, region:'Valedorn', desc:'Pequena vila cercada por florestas, colinas, antigas minas e ruínas esquecidas.', scene:'brumafria'},
+    {id:'camposdourados', name:'Campos Dourados', type:'poi', x:500, y:470, region:'Valedorn', desc:'Planícies férteis de trigo dourado.'},
+    {id:'vilaris', name:'Vilaris', type:'city', x:850, y:500, region:'Valedorn', desc:'Cidade mercantil às margens das rotas do leste.'},
+    {id:'arden', name:'Arden', type:'village', x:560, y:540, region:'Valedorn', desc:'Vila de agricultores nos Campos Dourados.'},
+    {id:'eldrin', name:'Eldrin', type:'village', x:470, y:500, region:'Valedorn', desc:'Pequeno vilarejo à beira do rio.'},
+    {id:'portoreal', name:'Porto Real', type:'city', x:600, y:700, region:'Valedorn', desc:'Grande porto de Valedorn, na foz do Rio Caez.'},
+    {id:'pontethalos', name:'Ponte de Thalos', type:'poi', x:650, y:430, region:'Valedorn', desc:'Antiga ponte de pedra sobre o Rio Caez.'},
+    {id:'pedrasserena', name:'Pedras Serena', type:'poi', x:700, y:660, region:'Valedorn', desc:'Formação rochosa junto ao Mar Sereno.'},
+    {id:'colinascinzentas', name:'Colinas Cinzentas', type:'poi', x:1000, y:430, region:'Valedorn', desc:'Colinas na fronteira leste do reino.'},
+    {id:'lagoprotegido', name:'Lago Protegido', type:'poi', x:955, y:610, region:'Valedorn', desc:'Lago sereno guardado por antigos pactos.'},
+
+    {id:'lunareth', name:'Lunareth', type:'capital', x:300, y:340, region:'Sylvarin', desc:'Capital élfica de Sylvarin, erguida sob a copa das grandes árvores.'},
+    {id:'thalvenn', name:"Ruínas de Thal'yen", type:'ruin', x:470, y:190, region:'Sylvarin', desc:'Ruínas antigas cobertas por musgo, ao norte da floresta.'},
+    {id:'bosquelagrimas', name:'Bosque das Lágrimas', type:'poi', x:280, y:210, region:'Sylvarin', desc:'Floresta sombria onde se ouvem lamentos ao anoitecer.'},
+    {id:'raizesantigas', name:'Raízes Antigas', type:'poi', x:210, y:290, region:'Sylvarin', desc:'Árvores milenares entrelaçadas, coração espiritual de Sylvarin.'},
+    {id:'lagomiraluz', name:'Lago Miraluz', type:'poi', x:340, y:480, region:'Sylvarin', desc:'Lago de águas cristalinas e brilhantes.'},
+    {id:'reliquias', name:'Relíquias Sagradas', type:'poi', x:300, y:520, region:'Sylvarin', desc:'Santuário élfico escondido entre as raízes.'},
+    {id:'selvasombria', name:'Selva Sombria', type:'poi', x:230, y:560, region:'Sylvarin', desc:'Mata densa e perigosa ao sul da floresta.'},
+
+    {id:'thorgar', name:'Thorgar', type:'capital', x:650, y:280, region:'Khar-Durim', desc:'Capital anã das Montanhas de Ferro, escavada na rocha.'},
+    {id:'picogelido', name:'Pico Gélido', type:'poi', x:770, y:170, region:'Khar-Durim', desc:'O pico mais alto de Khar-Durim, coberto de neve eterna.'},
+    {id:'passagemnorte', name:'Passagem Norte', type:'poi', x:520, y:150, region:'Khar-Durim', desc:'Passagem estreita entre picos gelados.'},
+    {id:'passothalan', name:'Passo de Thalan', type:'poi', x:850, y:230, region:'Khar-Durim', desc:'Rota comercial de montanha até Morvath.'},
+    {id:'minasantigas', name:'Minas Antigas', type:'ruin', x:600, y:230, region:'Khar-Durim', desc:'Minas abandonadas — dizem que se ligam às minas próximas a Brumafria.'},
+    {id:'coracaodepedra', name:'Coração de Pedra', type:'poi', x:920, y:200, region:'Khar-Durim', desc:'Formação rochosa sagrada para os anões.'},
+
+    {id:'citadelacaida', name:'Cidadela Caída', type:'ruin', x:1180, y:230, region:'Morvath', desc:'Ruínas de uma grande citadela, destruída no dia da Ruptura.'},
+    {id:'olhopartido', name:'O Olho Partido', type:'poi', x:1300, y:300, region:'Morvath', desc:'Cratera mágica que ainda pulsa uma energia estranha e vermelha.'},
+    {id:'fendasruptura', name:'Fendas da Ruptura', type:'poi', x:1400, y:360, region:'Morvath', desc:'Fendas no solo por onde escapa energia corrompida.'},
+    {id:'solomorto', name:'Solo Morto', type:'poi', x:1330, y:410, region:'Morvath', desc:'Terra estéril e cinzenta onde nada mais cresce.'},
+
+    {id:'kragor', name:'Kragor', type:'capital', x:1220, y:480, region:'Varkhan', desc:'Acampamento central e capital das tribos de Varkhan.'},
+    {id:'triboukaal', name:'Tribo Kaal', type:'poi', x:1300, y:560, region:'Varkhan', desc:'Acampamento nômade das estepes.'},
+    {id:'tribouren', name:'Tribo Uren', type:'poi', x:1250, y:620, region:'Varkhan', desc:'Acampamento nômade rival.'},
+    {id:'desertocinzento', name:'Deserto Cinzento', type:'poi', x:1150, y:560, region:'Varkhan', desc:'Extenso deserto de areias cinzentas.'},
+    {id:'passosangrento', name:'Passo Sangrento', type:'poi', x:1130, y:640, region:'Varkhan', desc:'Desfiladeiro palco de antigas batalhas.'},
+    {id:'canioncalcinado', name:'Cânion Calcinado', type:'poi', x:1260, y:680, region:'Varkhan', desc:'Cânion de rocha queimada por fogo antigo.'},
+    {id:'planiciesombria', name:'Planícies Sombrias', type:'poi', x:1090, y:400, region:'Varkhan', desc:'Planícies varridas pelo vento, na fronteira com Valedorn.'},
+
+    {id:'fortalezavelada', name:'Fortaleza Velada', type:'fortress', x:280, y:620, region:'Orthen', desc:'Fortaleza em ruínas de um reino esquecido, sob névoa constante.'},
+    {id:'valeesquecido', name:'Vale Esquecido', type:'ruin', x:480, y:700, region:'Orthen', desc:'Restos de uma grande cidade, tragada pela mata.'},
+    {id:'orthenbatalha', name:'Campo de Batalha', type:'poi', x:400, y:660, region:'Orthen', desc:'Local de uma batalha antiga e sangrenta.'},
+  ]
+};
+
+// ---- Definição geométrica de BRUMAFRIA (nível local, a vila) ----
+// Espaço local: 1000 x 700 unidades.
+const BRUMAFRIA = {
+  id:'brumafria',
+  name:'Brumafria',
+  w:1000, h:700,
+  gridSize:32,
+  roads:[
+    [[0,340],[140,340],[220,320],[340,330],[460,340],[600,340],[760,330],[900,300],[1000,270]], // estrada principal leste-oeste
+    [[500,340],[500,470],[500,600]], // rua até a praça e saída sul (minas)
+  ],
+  plaza:{x:500,y:400,r:70},
+  buildings:[
+    {name:'Taverna "O Javali Cansado"', type:'taverna', x:380,y:300,w:70,h:55, desc:'Ponto de encontro dos aventureiros e rumores da vila.'},
+    {name:'Loja do Mercador', type:'loja', x:600,y:300,w:60,h:48, desc:'Vende provisões, cordas e itens diversos.'},
+    {name:'Forja do Ferreiro', type:'ferreiro', x:640,y:420,w:60,h:50, desc:'Armas e ferramentas, tocada por um anão rabugento.'},
+    {name:'Hospedaria Pequena', type:'hospedaria', x:300,y:420,w:65,h:50, desc:'Quartos simples para viajantes.'},
+    {name:'Templo da Aurora', type:'templo', x:430,y:520,w:70,h:60, desc:'Pequeno templo dedicado aos deuses da luz.'},
+    {name:'Casa do Líder', type:'prefeitura', x:560,y:520,w:65,h:55, desc:'Onde vive a anciã que lidera Brumafria.'},
+    {name:'Estábulos', type:'estabulo', x:700,y:460,w:55,h:45, desc:'Cavalos e carroças para aluguel.'},
+    {name:'Casa 1', type:'casa', x:330,y:250,w:40,h:35, desc:'Residência simples de camponeses.'},
+    {name:'Casa 2', type:'casa', x:520,y:240,w:40,h:35, desc:'Residência simples de camponeses.'},
+    {name:'Casa 3', type:'casa', x:660,y:250,w:40,h:35, desc:'Residência simples de camponeses.'},
+    {name:'Casa 4', type:'casa', x:280,y:480,w:38,h:34, desc:'Residência simples de camponeses.'},
+    {name:'Casebre Abandonado', type:'abandonado', x:820,y:420,w:55,h:45, desc:'Área misteriosa — dizem que ruídos vêm de dentro à noite.'},
+  ],
+  wellX:500, wellY:400,
+  forestPatch:[ // árvores ao redor da vila
+    {x:60,y:80},{x:140,y:60},{x:220,y:90},{x:60,y:180},{x:60,y:260},{x:60,y:560},{x:140,y:600},
+    {x:900,y:80},{x:940,y:160},{x:940,y:560},{x:880,y:620},{x:760,y:640},{x:600,y:650},{x:200,y:650},
+    {x:940,y:400},{x:900,y:500},{x:120,y:400}
+  ],
+  exits:[
+    {label:'Estrada para Vale de Eldermoor', x:20, y:340, dir:'w'},
+    {label:'Estrada para os campos', x:980, y:270, dir:'e'},
+    {label:'Trilha para as Minas Antigas', x:500, y:660, dir:'s'},
+  ]
+};
+
+const SCENES = { world: WORLD, brumafria: BRUMAFRIA };
+
+// Estado dinâmico por cena (tokens, marcadores, desenhos, névoa, câmera)
+function freshSceneState(scene){
+  return {
+    camera: scene.id==='world' ? {x:scene.w/2, y:scene.h/2, zoom:0.62} : {x:scene.w/2, y:scene.h/2, zoom:0.85},
+    tokens: [],
+    markers: [],
+    drawings: [],
+    fogRevealed: new Set(), // "col,row" células reveladas
+  };
+}
+const sceneState = { world: freshSceneState(WORLD), brumafria: freshSceneState(BRUMAFRIA) };
+
+function scene(){ return SCENES[App.currentSceneId]; }
+function state(){ return sceneState[App.currentSceneId]; }
+
+/* ---------------------- 2. CÂMERA ---------------------- */
+
+const canvas = document.getElementById('stage');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas(){
+  const wrap = document.getElementById('stage-wrap');
+  canvas.width = wrap.clientWidth * devicePixelRatio;
+  canvas.height = wrap.clientHeight * devicePixelRatio;
+  canvas.style.width = wrap.clientWidth+'px';
+  canvas.style.height = wrap.clientHeight+'px';
+  render();
+}
+window.addEventListener('resize', resizeCanvas);
+
+// Converte coordenada de tela (px do canvas CSS) para coordenada de mundo da cena atual
+function screenToWorld(sx, sy){
+  const cam = state().camera;
+  const cw = canvas.width/devicePixelRatio, ch = canvas.height/devicePixelRatio;
+  return {
+    x: (sx - cw/2)/cam.zoom + cam.x,
+    y: (sy - ch/2)/cam.zoom + cam.y
+  };
+}
+function applyCameraTransform(){
+  const cam = state().camera;
+  const cw = canvas.width/devicePixelRatio, ch = canvas.height/devicePixelRatio;
+  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  ctx.translate(cw/2, ch/2);
+  ctx.scale(cam.zoom, cam.zoom);
+  ctx.translate(-cam.x, -cam.y);
+}
+function clampCamera(){
+  const cam = state().camera;
+  cam.zoom = Math.max(0.2, Math.min(4, cam.zoom));
+}
+function setZoom(z, aroundScreen){
+  const cam = state().camera;
+  let before=null;
+  if(aroundScreen) before = screenToWorld(aroundScreen.x, aroundScreen.y);
+  cam.zoom = z;
+  clampCamera();
+  if(aroundScreen){
+    const after = screenToWorld(aroundScreen.x, aroundScreen.y);
+    cam.x += before.x - after.x;
+    cam.y += before.y - after.y;
+  }
+  syncZoomUI();
+  render();
+}
+function syncZoomUI(){
+  const cam = state().camera;
+  document.getElementById('zoomSlider').value = Math.round(cam.zoom*100);
+  document.getElementById('zoomLabel').textContent = Math.round(cam.zoom*100)+'%';
+}
+
+/* ---------------------- 3. GRADE ---------------------- */
+function drawGrid(){
+  const s = scene();
+  const size = s.gridSize;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(180,150,90,0.25)';
+  ctx.lineWidth = 1/state().camera.zoom;
+  ctx.beginPath();
+  for(let x=0;x<=s.w;x+=size){ ctx.moveTo(x,0); ctx.lineTo(x,s.h); }
+  for(let y=0;y<=s.h;y+=size){ ctx.moveTo(0,y); ctx.lineTo(s.w,y); }
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* ---------------------- 4. NÉVOA DE GUERRA ---------------------- */
+const FOG_CELL = 40; // tamanho da célula de névoa em unidades de mundo
+
+function fogCellsInRadius(wx,wy,radius){
+  const s = scene();
+  const cells=[];
+  const minC = Math.max(0, Math.floor((wx-radius)/FOG_CELL));
+  const maxC = Math.min(Math.ceil(s.w/FOG_CELL), Math.ceil((wx+radius)/FOG_CELL));
+  const minR = Math.max(0, Math.floor((wy-radius)/FOG_CELL));
+  const maxR = Math.min(Math.ceil(s.h/FOG_CELL), Math.ceil((wy+radius)/FOG_CELL));
+  for(let c=minC;c<=maxC;c++){
+    for(let r=minR;r<=maxR;r++){
+      const cx=c*FOG_CELL+FOG_CELL/2, cy=r*FOG_CELL+FOG_CELL/2;
+      if(Math.hypot(cx-wx,cy-wy)<=radius+FOG_CELL*0.5) cells.push(c+','+r);
+    }
+  }
+  return cells;
+}
+function paintFog(wx,wy,reveal){
+  const st = state();
+  fogCellsInRadius(wx,wy,App.fogBrush).forEach(k=>{
+    if(reveal) st.fogRevealed.add(k); else st.fogRevealed.delete(k);
+  });
+}
+function revealAllFog(){
+  const s = scene();
+  const st = state();
+  const cols = Math.ceil(s.w/FOG_CELL), rows = Math.ceil(s.h/FOG_CELL);
+  for(let c=0;c<cols;c++) for(let r=0;r<rows;r++) st.fogRevealed.add(c+','+r);
+  render();
+}
+function clearExploration(){
+  state().fogRevealed.clear();
+  render();
+}
+function drawFog(){
+  if(!App.layers.fog) return;
+  const s = scene();
+  const st = state();
+  const cols = Math.ceil(s.w/FOG_CELL), rows = Math.ceil(s.h/FOG_CELL);
+  ctx.save();
+  for(let c=0;c<cols;c++){
+    for(let r=0;r<rows;r++){
+      const key=c+','+r;
+      const revealed = st.fogRevealed.has(key);
+      if(revealed) continue;
+      const x=c*FOG_CELL, y=r*FOG_CELL;
+      if(App.mode==='gm'){
+        ctx.fillStyle='rgba(10,8,6,0.55)';
+      } else {
+        ctx.fillStyle='rgba(6,4,3,0.97)';
+      }
+      ctx.fillRect(x,y,FOG_CELL,FOG_CELL);
+    }
+  }
+  ctx.restore();
+}
+
+/* ---------------------- 5. TOKENS ---------------------- */
+const TOKEN_TYPES = {
+  'Jogador':  {icon:'🧑', color:'#4a90d9'},
+  'NPC':      {icon:'🧙', color:'#7d5fb0'},
+  'Inimigo':  {icon:'👹', color:'#b0473f'},
+  'Animal':   {icon:'🐺', color:'#7a6a4a'},
+  'Chefe':    {icon:'💀', color:'#8a1f1f'},
+  'Marcador': {icon:'⭐', color:'#c99a4a'},
+};
+let tokenSeq = 1;
+function addToken(x,y,name,type){
+  const t = {
+    id:'tok'+(tokenSeq++), kind:'token',
+    name: name || type, type: type || 'Jogador',
+    x, y, size:26, visible:true, desc:''
+  };
+  state().tokens.push(t);
+  return t;
+}
+function tokenAt(wx,wy){
+  const toks = state().tokens;
+  for(let i=toks.length-1;i>=0;i--){
+    const t=toks[i];
+    if(App.mode==='player' && !t.visible) continue;
+    if(Math.hypot(t.x-wx,t.y-wy) <= t.size/2+3) return t;
+  }
+  return null;
+}
+function canDragToken(t){
+  if(App.mode==='gm') return true;
+  return t.type==='Jogador';
+}
+
+/* ---------------------- 6. DESENHOS E MARCADORES ---------------------- */
+let drawSeq=1, markSeq=1;
+function markerAt(wx,wy){
+  const ms = state().markers;
+  for(let i=ms.length-1;i>=0;i--){
+    const m=ms[i];
+    if(App.mode==='player' && m.secret) continue;
+    const hit = m.type==='pin' ? Math.hypot(m.x-wx,m.y-wy)<=14 :
+                (m.type==='text' ? (wx>=m.x-4 && wx<=m.x+ (m.text.length*6) && wy>=m.y-14 && wy<=m.y+4) : false);
+    if(hit) return m;
+  }
+  return null;
+}
+function drawingAt(wx,wy,tolerance){
+  const ds = state().drawings;
+  tolerance = tolerance || 10;
+  for(let i=ds.length-1;i>=0;i--){
+    const d=ds[i];
+    if(d.type==='path'){
+      for(let p of d.points){ if(Math.hypot(p.x-wx,p.y-wy)<=tolerance) return d; }
+    } else if(d.type==='line'){
+      if(distToSeg(wx,wy,d.x1,d.y1,d.x2,d.y2)<=tolerance) return d;
+    } else if(d.type==='rect'){
+      const x1=Math.min(d.x1,d.x2), x2=Math.max(d.x1,d.x2), y1=Math.min(d.y1,d.y2), y2=Math.max(d.y1,d.y2);
+      const onEdge = (Math.abs(wx-x1)<=tolerance||Math.abs(wx-x2)<=tolerance) && wy>=y1-tolerance && wy<=y2+tolerance ||
+                     (Math.abs(wy-y1)<=tolerance||Math.abs(wy-y2)<=tolerance) && wx>=x1-tolerance && wx<=x2+tolerance;
+      if(onEdge) return d;
+    } else if(d.type==='circle'){
+      const dist = Math.hypot(wx-d.x,wy-d.y);
+      if(Math.abs(dist-d.r)<=tolerance) return d;
+    }
+  }
+  return null;
+}
+function distToSeg(px,py,x1,y1,x2,y2){
+  const A=px-x1,B=py-y1,C=x2-x1,D=y2-y1;
+  const dot=A*C+B*D, len=C*C+D*D;
+  let t = len? dot/len : -1;
+  t = Math.max(0,Math.min(1,t));
+  const xx=x1+t*C, yy=y1+t*D;
+  return Math.hypot(px-xx,py-yy);
+}
+
+/* ---------------------- 7. SALVAMENTO ---------------------- */
+function serializeScene(id){
+  const st = sceneState[id];
+  return {
+    camera: st.camera,
+    tokens: st.tokens,
+    markers: st.markers,
+    drawings: st.drawings,
+    fogRevealed: Array.from(st.fogRevealed),
+    layers: App.layers,
+  };
+}
+function deserializeScene(id, data){
+  const st = sceneState[id];
+  if(!data) return;
+  st.camera = data.camera || st.camera;
+  st.tokens = data.tokens || [];
+  st.markers = data.markers || [];
+  st.drawings = data.drawings || [];
+  st.fogRevealed = new Set(data.fogRevealed || []);
+}
+function saveCurrentScene(){
+  const id = App.currentSceneId;
+  localStorage.setItem('aethra_map_'+id, JSON.stringify(serializeScene(id)));
+  toast('Mapa "'+scene().name+'" salvo.');
+}
+function loadCurrentScene(){
+  const id = App.currentSceneId;
+  const raw = localStorage.getItem('aethra_map_'+id);
+  if(!raw){ toast('Nenhum mapa salvo para '+scene().name+'.'); return; }
+  deserializeScene(id, JSON.parse(raw));
+  clearSelection();
+  render();
+  toast('Mapa "'+scene().name+'" carregado.');
+}
+function newCurrentScene(){
+  if(!confirm('Criar um novo mapa em branco para "'+scene().name+'"? Tokens, desenhos e névoa serão apagados.')) return;
+  const id = App.currentSceneId;
+  sceneState[id] = freshSceneState(SCENES[id]);
+  clearSelection();
+  render();
+  toast('Novo mapa criado para '+scene().name+'.');
+}
+function exportAll(){
+  const data = { world: serializeScene('world'), brumafria: serializeScene('brumafria') };
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'aethra_mapa.json';
+  a.click();
+  toast('Mapa exportado como JSON.');
+}
+function importAll(file){
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      if(data.world) deserializeScene('world', data.world);
+      if(data.brumafria) deserializeScene('brumafria', data.brumafria);
+      clearSelection();
+      render();
+      toast('Mapa importado com sucesso.');
+    }catch(e){
+      alert('Arquivo inválido: '+e.message);
+    }
+  };
+  reader.readAsText(file);
+}
+function resetEverything(){
+  if(!confirm('Resetar TODO o projeto (mundo e Brumafria) para o estado inicial? Esta ação não pode ser desfeita.')) return;
+  localStorage.removeItem('aethra_map_world');
+  localStorage.removeItem('aethra_map_brumafria');
+  sceneState.world = freshSceneState(WORLD);
+  sceneState.brumafria = freshSceneState(BRUMAFRIA);
+  clearSelection();
+  render();
+  toast('Projeto resetado.');
+}
+
+/* ---------------------- 8. RENDERIZAÇÃO ---------------------- */
+
+function render(){
+  const cw = canvas.width/devicePixelRatio, ch = canvas.height/devicePixelRatio;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle = '#0d0906';
+  ctx.fillRect(0,0,cw,ch);
+
+  applyCameraTransform();
+  const s = scene();
+
+  // fundo de pergaminho
+  if(App.layers.terrain){
+    ctx.fillStyle = '#dcc99c';
+    ctx.fillRect(-40,-40,s.w+80,s.h+80);
+    drawParchmentTexture(s);
+  }
+
+  if(s.id==='world') renderWorld(); else renderBrumafria();
+
+  if(App.layers.grid) drawGrid();
+  drawTokensAndMarkersAndDrawings();
+  drawFog();
+  drawSelectionHighlight();
+  drawActiveDragPreview();
+
+  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  updateCoordsUI();
+}
+
+function drawParchmentTexture(s){
+  ctx.save();
+  ctx.globalAlpha=0.06;
+  ctx.strokeStyle='#3a2c18';
+  for(let i=0;i<26;i++){
+    ctx.beginPath();
+    const y = (i/26)*s.h;
+    ctx.moveTo(0,y);
+    ctx.bezierCurveTo(s.w*0.3, y+18, s.w*0.6, y-18, s.w, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function renderWorld(){
+  const s = WORLD;
+  const zoom = state().camera.zoom;
+// ---- Oceano (fora do continente) ----
+  ctx.save();
+  const oceanGrad = ctx.createLinearGradient(0,0,0,s.h);
+  oceanGrad.addColorStop(0,'#1c4a5c');
+  oceanGrad.addColorStop(1,'#0e2f3d');
+  ctx.fillStyle = oceanGrad;
+  ctx.fillRect(-200,-200,s.w+400,s.h+400);
+  // ondulações decorativas do oceano
+  ctx.strokeStyle='rgba(200,225,230,0.12)';
+  ctx.lineWidth=1.2/zoom;
+  for(let i=0;i<40;i++){
+    const y = (i*47)%(s.h+300)-150;
+    ctx.beginPath();
+    for(let x=-200;x<s.w+200;x+=60){
+      const yy = y + Math.sin((x+i*40)/70)*6;
+      x===-200 ? ctx.moveTo(x,yy) : ctx.lineTo(x,yy);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // ---- Ilhas decorativas ----
+  s.islands.forEach(isl=>{
+    ctx.save();
+    isl.cl.forEach(([dx,dy])=>{
+      ctx.fillStyle='#c9b98d';
+      ctx.beginPath();
+      ctx.ellipse(isl.x+dx, isl.y+dy, 9,6,0,0,7);
+      ctx.fill();
+      drawTreeIcon(isl.x+dx, isl.y+dy-6);
+    });
+    ctx.restore();
+    drawLabel(isl.x+30, isl.y+22, isl.name, 10, '#bcd8de', false);
+  });
+  // rótulos dos mares
+  s.oceanLabels.forEach(o=> drawLabel(o.x,o.y,o.name,13,'rgba(190,220,225,0.85)',false));
+
+  // ---- Base única do continente (para não haver "buracos" entre regiões) ----
+  ctx.save();
+  ctx.beginPath();
+  s.continent.forEach(([x,y],i)=> i? ctx.lineTo(x,y): ctx.moveTo(x,y));
+  ctx.closePath();
+  ctx.fillStyle = '#cdbb8c';
+  ctx.fill();
+  ctx.lineWidth = 3.5/zoom;
+  ctx.strokeStyle = '#5a3a1f';
+  ctx.stroke();
+  ctx.restore();
+
+  // ---- Regiões (tingidas sobre a base, mesmo contorno único) ----
+  if(App.layers.terrain){
+    ctx.save();
+    ctx.beginPath();
+    s.continent.forEach(([x,y],i)=> i? ctx.lineTo(x,y): ctx.moveTo(x,y));
+    ctx.closePath();
+    ctx.clip();
+    s.regions.forEach(r=>{
+      ctx.beginPath();
+      r.pts.forEach(([x,y],i)=> i? ctx.lineTo(x,y): ctx.moveTo(x,y));
+      ctx.closePath();
+      ctx.fillStyle = hexA(r.color,0.62);
+      ctx.fill();
+      ctx.strokeStyle = hexA(r.color,0.55);
+      ctx.lineWidth = 1.5/zoom;
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // relevo / vegetação
+    s.desert.forEach(d=> drawDuneCluster(d.x,d.y));
+    s.corrupted.forEach(c=> drawCorruptedCluster(c.x,c.y));
+    drawCrater(s.crater.x, s.crater.y, s.crater.r);
+    s.mountains.forEach(m=> drawMountainIcon(m.x,m.y));
+    s.forests.forEach(f=> drawForestCluster(f.x,f.y));
+  }
+
+  // água
+  if(App.layers.water){
+    ctx.strokeStyle = '#4d7c8e';
+    ctx.lineWidth = 6/zoom;
+    ctx.lineCap='round';
+    s.rivers.forEach(river=>{
+      ctx.beginPath();
+      river.forEach(([x,y],i)=> i? ctx.lineTo(x,y): ctx.moveTo(x,y));
+      ctx.stroke();
+    });
+    s.lakes.forEach(l=>{
+      ctx.beginPath();
+      ctx.fillStyle='#4d7c8e';
+      ctx.arc(l.x,l.y,l.r,0,7);
+      ctx.fill();
+      ctx.strokeStyle='#2c5666';
+      ctx.lineWidth=1.5/zoom;
+      ctx.stroke();
+      drawLabel(l.x, l.y-l.r-8, l.name, 10, '#204450', false);
+    });
+  }
+
+  // estradas — principais sólidas, secundárias tracejadas
+  if(App.layers.roads){
+    ctx.strokeStyle='#5a3a1f';
+    ctx.lineWidth=4/zoom;
+    ctx.lineCap='round';
+    s.roads.forEach(road=>{
+      ctx.beginPath();
+      road.forEach(([x,y],i)=> i? ctx.lineTo(x,y): ctx.moveTo(x,y));
+      ctx.stroke();
+    });
+    ctx.strokeStyle='#c9a35f';
+    ctx.lineWidth=1.6/zoom;
+    ctx.setLineDash([6,6]);
+    s.roads.forEach(road=>{
+      ctx.beginPath();
+      road.forEach(([x,y],i)=> i? ctx.lineTo(x,y): ctx.moveTo(x,y));
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+  }
+
+  // regiões: nome + subtítulo
+  if(App.layers.locations){
+    s.regions.forEach(r=>{
+      const c = polyCentroid(r.pts);
+      drawLabel(c.x,c.y-8, r.name.toUpperCase(), 24, '#241b14', true);
+      drawLabel(c.x,c.y+16, r.sub, 11, '#3a2c18', false);
+    });
+  }
+  // locais
+  if(App.layers.locations){
+    s.locations.forEach(loc=> drawLocationIcon(loc));
+  }
+}
+
+function drawCorruptedCluster(x,y){
+  ctx.save();
+  ctx.strokeStyle='rgba(140,30,30,0.55)';
+  ctx.lineWidth=2/state().camera.zoom;
+  for(let i=0;i<3;i++){
+    ctx.beginPath();
+    const a = x+Math.cos(i*2)*14, b=y+Math.sin(i*2)*14;
+    ctx.moveTo(a-10,b+8); ctx.lineTo(a+2,b-10); ctx.lineTo(a+12,b+6);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawCrater(x,y,r){
+  ctx.save();
+  const grad = ctx.createRadialGradient(x,y,2,x,y,r);
+  grad.addColorStop(0,'rgba(255,90,40,0.9)');
+  grad.addColorStop(0.5,'rgba(150,30,20,0.55)');
+  grad.addColorStop(1,'rgba(30,10,10,0)');
+  ctx.fillStyle=grad;
+  ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
+  ctx.strokeStyle='rgba(255,140,70,0.7)';
+  ctx.lineWidth=2/state().camera.zoom;
+  ctx.beginPath(); ctx.arc(x,y,r*0.6,0,7); ctx.stroke();
+  ctx.restore();
+}
+
+function renderBrumafria(){
+  const s = BRUMAFRIA;
+  // borda de floresta
+  if(App.layers.terrain){
+    s.forestPatch.forEach(f=> drawTreeIcon(f.x,f.y));
+  }
+  // estradas
+  if(App.layers.roads){
+    ctx.strokeStyle='#8a6a3f';
+    ctx.lineWidth=10/state().camera.zoom;
+    ctx.lineCap='round';
+    s.roads.forEach(road=>{
+      ctx.beginPath();
+      road.forEach(([x,y],i)=> i? ctx.lineTo(x,y): ctx.moveTo(x,y));
+      ctx.stroke();
+    });
+    ctx.strokeStyle='#a9895a';
+    ctx.lineWidth=6/state().camera.zoom;
+    s.roads.forEach(road=>{
+      ctx.beginPath();
+      road.forEach(([x,y],i)=> i? ctx.lineTo(x,y): ctx.moveTo(x,y));
+      ctx.stroke();
+    });
+  }
+  // praça central + poço
+  if(App.layers.buildings){
+    ctx.beginPath();
+    ctx.fillStyle='#c7b07d';
+    ctx.arc(s.plaza.x, s.plaza.y, s.plaza.r, 0, 7);
+    ctx.fill();
+    ctx.strokeStyle='#8a6a3f';
+    ctx.lineWidth=2/state().camera.zoom;
+    ctx.stroke();
+    // poço
+    ctx.beginPath();
+    ctx.fillStyle='#5b6b73';
+    ctx.arc(s.wellX, s.wellY, 10, 0, 7);
+    ctx.fill();
+    ctx.strokeStyle='#2a2018';
+    ctx.stroke();
+  }
+  // edifícios
+  if(App.layers.buildings){
+    s.buildings.forEach(b=> drawBuilding(b));
+  }
+  // saídas
+  if(App.layers.locations){
+    s.exits.forEach(e=>{
+      drawLabel(e.x,e.y, e.label, 11, '#5a3a1f', false);
+    });
+  }
+}
+
+function drawBuilding(b){
+  const palette = {
+    taverna:'#a9583a', loja:'#8a6a3f', ferreiro:'#5b5b5b', hospedaria:'#7a6a4a',
+    templo:'#c9a84a', prefeitura:'#7a5a8a', estabulo:'#6a4a2a', casa:'#8a7050', abandonado:'#4a4038'
+  };
+  ctx.save();
+  ctx.fillStyle = palette[b.type] || '#8a7050';
+  ctx.strokeStyle = '#2a2018';
+  ctx.lineWidth = 2/state().camera.zoom;
+  ctx.beginPath();
+  roundRect(ctx, b.x-b.w/2, b.y-b.h/2, b.w, b.h, 4);
+  ctx.fill(); ctx.stroke();
+  // telhado
+  ctx.beginPath();
+  ctx.fillStyle = 'rgba(122,46,46,0.55)';
+  ctx.moveTo(b.x-b.w/2-4, b.y-b.h/2);
+  ctx.lineTo(b.x, b.y-b.h/2-14);
+  ctx.lineTo(b.x+b.w/2+4, b.y-b.h/2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+  drawLabel(b.x, b.y+b.h/2+12, b.name, 11, '#3a2c18', false);
+}
+
+function drawLocationIcon(loc){
+  const glyphs = {capital:'👑', city:'🏰', village:'🏘️', ruin:'🏚️', fortress:'🛡️', poi:'◆'};
+  const g = glyphs[loc.type] || '◆';
+  const isCapital = loc.type==='capital';
+  ctx.save();
+  if(loc.type==='poi'){
+    ctx.fillStyle='#3a2c18';
+    ctx.beginPath();
+    ctx.arc(loc.x,loc.y,4,0,7);
+    ctx.fill();
+  } else {
+    if(isCapital){
+      // anel dourado de destaque ao redor de capitais
+      ctx.beginPath();
+      ctx.arc(loc.x,loc.y,15,0,7);
+      ctx.strokeStyle='#c99a4a';
+      ctx.lineWidth=2/state().camera.zoom;
+      ctx.fillStyle='rgba(201,154,74,0.18)';
+      ctx.fill(); ctx.stroke();
+    }
+    ctx.font = (isCapital?24:20)+'px serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(g, loc.x, loc.y);
+  }
+  ctx.restore();
+  drawLabel(loc.x, loc.y+(loc.type==='poi'?12: isCapital?22:16), loc.name, loc.type==='poi'?10:(isCapital?14:13), '#241b14', loc.id==='brumafria'||isCapital);
+}
+
+function drawLabel(x,y,text,size,color,bold){
+  ctx.save();
+  ctx.font = (bold?'700 ':'500 ')+size+'px Cinzel, serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.lineWidth=3/state().camera.zoom;
+  ctx.strokeStyle='rgba(231,217,182,0.8)';
+  ctx.strokeText(text,x,y);
+  ctx.fillStyle=color;
+  ctx.fillText(text,x,y);
+  ctx.restore();
+}
+
+function drawMountainIcon(x,y){
+  ctx.save();
+  ctx.fillStyle='#6b7680';
+  ctx.strokeStyle='#3a3f45';
+  ctx.lineWidth=1.5/state().camera.zoom;
+  [[0,0],[14,-4],[26,3]].forEach(([dx,dy])=>{
+    ctx.beginPath();
+    ctx.moveTo(x+dx-16,y+dy+16);
+    ctx.lineTo(x+dx,y+dy-14);
+    ctx.lineTo(x+dx+16,y+dy+16);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+  });
+  ctx.fillStyle='#eef3f6';
+  ctx.beginPath();
+  ctx.moveTo(x-4,y-6); ctx.lineTo(x,y-14); ctx.lineTo(x+4,y-6); ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+function drawForestCluster(x,y){
+  for(let i=0;i<5;i++){
+    const ox = Math.sin(i*2.1+x)*16, oy=Math.cos(i*1.7+y)*12;
+    drawTreeIcon(x+ox,y+oy);
+  }
+}
+function drawTreeIcon(x,y){
+  ctx.save();
+  ctx.fillStyle='#33502f';
+  ctx.beginPath();
+  ctx.moveTo(x,y-14); ctx.lineTo(x-9,y+4); ctx.lineTo(x+9,y+4); ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle='#4a3823';
+  ctx.fillRect(x-2,y+3,4,6);
+  ctx.restore();
+}
+function drawDuneCluster(x,y){
+  ctx.save();
+  ctx.strokeStyle='rgba(120,95,55,0.55)';
+  ctx.lineWidth=2/state().camera.zoom;
+  for(let i=0;i<3;i++){
+    ctx.beginPath();
+    ctx.arc(x+i*14, y+i*6, 18, Math.PI, 0);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function roundRect(c,x,y,w,h,r){
+  c.moveTo(x+r,y);
+  c.arcTo(x+w,y,x+w,y+h,r);
+  c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r);
+  c.arcTo(x,y,x+w,y,r);
+}
+function hexA(hex,a){
+  const n = parseInt(hex.slice(1),16);
+  const r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+  return `rgba(${r},${g},${b},${a})`;
+}
+function polyCentroid(pts){
+  let x=0,y=0; pts.forEach(p=>{x+=p[0];y+=p[1];});
+  return {x:x/pts.length, y:y/pts.length};
+}
+
+function drawTokensAndMarkersAndDrawings(){
+  if(App.layers.drawings){
+    state().drawings.forEach(d=> drawDrawing(d));
+  }
+  if(App.layers.locations || App.layers.gmInfo){
+    state().markers.forEach(m=>{
+      if(m.secret && !App.layers.gmInfo) return;
+      if(m.secret && App.mode==='player') return;
+      drawMarker(m);
+    });
+  }
+  if(App.layers.tokens){
+    state().tokens.forEach(t=>{
+      if(!t.visible && App.mode==='player') return;
+      drawToken(t);
+    });
+  }
+}
+function drawDrawing(d){
+  ctx.save();
+  ctx.strokeStyle = d.color || '#c0483c';
+  ctx.fillStyle = hexA(d.color||'#c0483c', 0.18);
+  ctx.lineWidth = (d.width||3)/state().camera.zoom;
+  ctx.lineJoin='round'; ctx.lineCap='round';
+  if(d.type==='path'){
+    ctx.beginPath();
+    d.points.forEach((p,i)=> i? ctx.lineTo(p.x,p.y) : ctx.moveTo(p.x,p.y));
+    ctx.stroke();
+  } else if(d.type==='line'){
+    ctx.beginPath(); ctx.moveTo(d.x1,d.y1); ctx.lineTo(d.x2,d.y2); ctx.stroke();
+  } else if(d.type==='rect'){
+    const x=Math.min(d.x1,d.x2), y=Math.min(d.y1,d.y2), w=Math.abs(d.x2-d.x1), h=Math.abs(d.y2-d.y1);
+    ctx.beginPath(); ctx.rect(x,y,w,h); ctx.fill(); ctx.stroke();
+  } else if(d.type==='circle'){
+    ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,7); ctx.fill(); ctx.stroke();
+  } else if(d.type==='text'){
+    ctx.font='600 16px Spectral, serif';
+    ctx.fillStyle=d.color||'#241b14';
+    ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+    ctx.fillText(d.text, d.x, d.y);
+  }
+  ctx.restore();
+}
+function drawMarker(m){
+  ctx.save();
+  if(m.type==='pin'){
+    ctx.font='22px serif';
+    ctx.textAlign='center'; ctx.textBaseline='bottom';
+    ctx.fillText(m.secret?'🔒':'📍', m.x, m.y+10);
+    if(m.label){
+      drawLabel(m.x, m.y+18, m.label, 11, m.secret?'#7a2e2e':'#241b14', false);
+    }
+  } else if(m.type==='text'){
+    ctx.font='600 15px Spectral, serif';
+    ctx.fillStyle= m.secret? '#7a2e2e' : '#241b14';
+    ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+    ctx.fillText(m.text, m.x, m.y);
+  }
+  ctx.restore();
+}
+function drawToken(t){
+  const info = TOKEN_TYPES[t.type] || TOKEN_TYPES['Marcador'];
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(t.x,t.y,t.size/2,0,7);
+  ctx.fillStyle = t.visible? hexA(info.color,0.92) : hexA(info.color,0.4);
+  ctx.fill();
+  ctx.lineWidth=2.5/state().camera.zoom;
+  ctx.strokeStyle = t.visible? '#241b14' : 'rgba(36,27,20,0.4)';
+  ctx.stroke();
+  if(!t.visible && App.mode==='gm'){
+    ctx.setLineDash([3,3]);
+    ctx.strokeStyle='#e7d9b6';
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.font=(t.size*0.6)+'px serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(info.icon, t.x, t.y+1);
+  ctx.restore();
+  drawLabel(t.x, t.y+t.size/2+11, t.name, 11, '#241b14', false);
+}
+
+function drawSelectionHighlight(){
+  if(!App.selected) return;
+  const o = App.selected.ref;
+  ctx.save();
+  ctx.strokeStyle='#c99a4a';
+  ctx.lineWidth=2.5/state().camera.zoom;
+  ctx.setLineDash([6,4]);
+  if(App.selected.kind==='token'){
+    ctx.beginPath(); ctx.arc(o.x,o.y,o.size/2+6,0,7); ctx.stroke();
+  } else if(App.selected.kind==='marker'){
+    ctx.beginPath(); ctx.arc(o.x,o.y,18,0,7); ctx.stroke();
+  } else if(App.selected.kind==='drawing'){
+    if(o.type==='rect'){
+      const x=Math.min(o.x1,o.x2)-4, y=Math.min(o.y1,o.y2)-4, w=Math.abs(o.x2-o.x1)+8, h=Math.abs(o.y2-o.y1)+8;
+      ctx.strokeRect(x,y,w,h);
+    } else if(o.type==='circle'){
+      ctx.beginPath(); ctx.arc(o.x,o.y,o.r+6,0,7); ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.arc(o.x1!==undefined?o.x1:o.points[0].x, o.y1!==undefined?o.y1:o.points[0].y, 8,0,7); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+function drawActiveDragPreview(){
+  const d = App.drag;
+  if(!d || !d.preview) return;
+  drawDrawing(d.preview);
+}
+
+function updateCoordsUI(){
+  document.getElementById('coords').textContent = App.lastWorld ? `x:${Math.round(App.lastWorld.x)} y:${Math.round(App.lastWorld.y)}` : 'x:0 y:0';
+}
+
+/* ---------------------- 9. ENTRADA / UI ---------------------- */
+
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(App.toastTimer);
+  App.toastTimer = setTimeout(()=> el.classList.remove('show'), 2200);
+}
+
+// ---- Ferramentas GM-only bloqueadas em modo Jogador ----
+function toolAllowed(tool){
+  if(App.mode==='gm') return true;
+  return ['select','pan','addToken'].includes(tool);
+}
+function setTool(tool){
+  if(!toolAllowed(tool)) return;
+  App.tool = tool;
+  document.querySelectorAll('.tool').forEach(b=> b.classList.toggle('active', b.dataset.tool===tool));
+  canvas.classList.toggle('tool-cursor', tool!=='select' && tool!=='pan');
+}
+document.querySelectorAll('.tool').forEach(btn=>{
+  btn.addEventListener('click', ()=> setTool(btn.dataset.tool));
+});
+
+// ---- Camadas ----
+const LAYER_LABELS = {
+  terrain:'Terreno', roads:'Estradas', water:'Água', buildings:'Construções',
+  locations:'Locais', tokens:'Tokens', drawings:'Desenhos', grid:'Grade',
+  fog:'Névoa', gmInfo:'Informações do Mestre'
+};
+function buildLayerUI(){
+  const list = document.getElementById('layerList');
+  list.innerHTML='';
+  Object.keys(LAYER_LABELS).forEach(key=>{
+    if(key==='gmInfo' && App.mode==='player') return;
+    const row = document.createElement('div');
+    row.className='layer-row';
+    row.innerHTML = `<label>${LAYER_LABELS[key]}</label><div class="switch ${App.layers[key]?'on':''}" data-layer="${key}"><div class="knob"></div></div>`;
+    list.appendChild(row);
+  });
+  list.querySelectorAll('.switch').forEach(sw=>{
+    sw.addEventListener('click', ()=>{
+      const key = sw.dataset.layer;
+      App.layers[key] = !App.layers[key];
+      sw.classList.toggle('on', App.layers[key]);
+      if(key==='grid') document.getElementById('btnGrid').classList.toggle('on', App.layers.grid);
+      if(key==='fog') document.getElementById('btnFogMaster').classList.toggle('on', App.layers.fog);
+      render();
+    });
+  });
+}
+
+// ---- Modo Mestre / Jogador ----
+function setMode(mode){
+  App.mode = mode;
+  document.getElementById('modeGM').classList.toggle('active', mode==='gm');
+  document.getElementById('modeVocesData').classList.toggle('active', mode==='player');
+  document.querySelectorAll('.tool[data-gm="1"]').forEach(b=> b.disabled = mode==='player');
+  document.getElementById('gmFogControls').style.display = mode==='gm' ? 'flex':'none';
+  if(mode==='player' && !toolAllowed(App.tool)) setTool('select');
+  buildLayerUI();
+  clearSelection();
+  render();
+}
+document.getElementById('modeGM').addEventListener('click', ()=> setMode('gm'));
+document.getElementById('modeVocesData').addEventListener('click', ()=> setMode('player'));
+
+// ---- Troca de cena ----
+function switchScene(id){
+  App.currentSceneId = id;
+  document.getElementById('mapNameLabel').textContent = scene().name;
+  document.getElementById('btnGoWorld').disabled = (id==='world');
+  const showDecor = (id==='world');
+  ['mapFrame','titlePlate','mapQuote','mapCompass','mapLegend','mapScale'].forEach(elId=>{
+    document.getElementById(elId).style.display = showDecor ? '' : 'none';
+  });
+  clearSelection();
+  syncZoomUI();
+  render();
+}
+document.getElementById('btnGoWorld').addEventListener('click', ()=> switchScene('world'));
+
+// ---- Seleção / painel de objeto ----
+function clearSelection(){
+  App.selected = null;
+  renderObjectPanel();
+}
+function selectObject(kind, ref){
+  App.selected = {kind, ref};
+  renderObjectPanel();
+  render();
+}
+function renderObjectPanel(){
+  const box = document.getElementById('objectInfo');
+  if(!App.selected){ box.innerHTML = '<div class="empty">Nada selecionado. Clique em um token, marcador ou desenho.</div>'; return; }
+  const {kind, ref} = App.selected;
+  const readOnly = App.mode==='player' && !(kind==='token' && ref.type==='Jogador');
+
+  if(kind==='token'){
+    box.innerHTML = `
+      <label>Nome</label><input type="text" id="fName" value="${escapeHtml(ref.name)}" ${readOnly?'disabled':''}>
+      <label>Tipo</label>
+      <select id="fType" ${readOnly?'disabled':''}>
+        ${Object.keys(TOKEN_TYPES).map(t=>`<option value="${t}" ${t===ref.type?'selected':''}>${t}</option>`).join('')}
+      </select>
+      <label>Descrição</label><textarea id="fDesc" ${readOnly?'disabled':''}>${escapeHtml(ref.desc||'')}</textarea>
+      <div class="row2">
+        <div><label>Posição X</label><input type="text" value="${Math.round(ref.x)}" disabled></div>
+        <div><label>Posição Y</label><input type="text" value="${Math.round(ref.y)}" disabled></div>
+      </div>
+      ${App.mode==='gm' ? `<label style="margin-top:10px;"><input type="checkbox" id="fVis" ${ref.visible?'checked':''}> Visível para jogadores</label>` : ''}
+      <div class="modal-actions">
+        ${!readOnly?'<button class="btn" id="fApply">Aplicar</button>':''}
+        ${App.mode==='gm'?'<button class="btn danger" id="fDelete">Excluir</button>':''}
+      </div>`;
+    if(!readOnly) document.getElementById('fApply').addEventListener('click', ()=>{
+      ref.name = document.getElementById('fName').value || ref.type;
+      ref.type = document.getElementById('fType').value;
+      ref.desc = document.getElementById('fDesc').value;
+      if(App.mode==='gm') ref.visible = document.getElementById('fVis').checked;
+      render(); renderObjectPanel(); toast('Token atualizado.');
+    });
+    if(App.mode==='gm') document.getElementById('fDelete').addEventListener('click', ()=>{
+      state().tokens = state().tokens.filter(t=>t!==ref);
+      clearSelection(); render();
+    });
+  } else if(kind==='marker'){
+    box.innerHTML = `
+      <label>${ref.type==='pin'?'Rótulo':'Texto'}</label>
+      <input type="text" id="fLabel" value="${escapeHtml(ref.label||ref.text||'')}" ${readOnly?'disabled':''}>
+      ${App.mode==='gm'?`<label style="margin-top:10px;"><input type="checkbox" id="fSecret" ${ref.secret?'checked':''}> Secreto (somente Mestre)</label>`:''}
+      <div class="modal-actions">
+        ${!readOnly?'<button class="btn" id="fApply">Aplicar</button>':''}
+        ${App.mode==='gm'?'<button class="btn danger" id="fDelete">Excluir</button>':''}
+      </div>`;
+    if(!readOnly) document.getElementById('fApply').addEventListener('click', ()=>{
+      const v = document.getElementById('fLabel').value;
+      if(ref.type==='pin') ref.label=v; else ref.text=v;
+      if(App.mode==='gm') ref.secret = document.getElementById('fSecret').checked;
+      render(); toast('Marcador atualizado.');
+    });
+    if(App.mode==='gm') document.getElementById('fDelete').addEventListener('click', ()=>{
+      state().markers = state().markers.filter(m=>m!==ref);
+      clearSelection(); render();
+    });
+  } else if(kind==='drawing'){
+    box.innerHTML = `
+      <div class="empty">Desenho (${ref.type}).</div>
+      <div class="modal-actions">
+        ${App.mode==='gm'?'<button class="btn danger" id="fDelete">Excluir</button>':''}
+      </div>`;
+    if(App.mode==='gm') document.getElementById('fDelete').addEventListener('click', ()=>{
+      state().drawings = state().drawings.filter(d=>d!==ref);
+      clearSelection(); render();
+    });
+  }
+}
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---- Modal genérico (usado para novo token, texto, pin) ---- */
+function openModal(html, onMount){
+  const overlay = document.getElementById('modalOverlay');
+  const box = document.getElementById('modalBox');
+  box.innerHTML = html;
+  overlay.classList.add('show');
+  if(onMount) onMount(box);
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
+document.getElementById('modalOverlay').addEventListener('click', (e)=>{ if(e.target.id==='modalOverlay') closeModal(); });
+
+function promptAddToken(wx,wy){
+  let chosenType='Jogador';
+  openModal(`
+    <h3>Novo Token</h3>
+    <label>Nome</label><input type="text" id="mName" placeholder="Ex: Kaelen, o Batedor">
+    <label>Tipo</label>
+    <div class="type-grid" id="typeGrid">
+      ${Object.keys(TOKEN_TYPES).map(t=>`<div class="type-chip ${t==='Jogador'?'sel':''}" data-t="${t}">${TOKEN_TYPES[t].icon} ${t}</div>`).join('')}
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="mCancel">Cancelar</button>
+      <button class="btn primary" id="mOk">Adicionar</button>
+    </div>
+  `, (box)=>{
+    box.querySelectorAll('.type-chip').forEach(chip=>{
+      chip.addEventListener('click', ()=>{
+        box.querySelectorAll('.type-chip').forEach(c=>c.classList.remove('sel'));
+        chip.classList.add('sel');
+        chosenType = chip.dataset.t;
+      });
+    });
+    box.querySelector('#mCancel').addEventListener('click', closeModal);
+    box.querySelector('#mOk').addEventListener('click', ()=>{
+      const name = box.querySelector('#mName').value.trim();
+      const t = addToken(wx,wy,name||chosenType,chosenType);
+      closeModal(); render();
+      selectObject('token', t);
+      toast('Token adicionado.');
+    });
+  });
+}
+function promptAddPin(wx,wy){
+  openModal(`
+    <h3>Novo Marcador (Pin)</h3>
+    <label>Rótulo</label><input type="text" id="mLabel" placeholder="Ex: Entrada da caverna">
+    <label style="margin-top:10px;"><input type="checkbox" id="mSecret"> Secreto (somente Mestre)</label>
+    <div class="modal-actions">
+      <button class="btn" id="mCancel">Cancelar</button>
+      <button class="btn primary" id="mOk">Adicionar</button>
+    </div>
+  `, (box)=>{
+    box.querySelector('#mCancel').addEventListener('click', closeModal);
+    box.querySelector('#mOk').addEventListener('click', ()=>{
+      const label = box.querySelector('#mLabel').value.trim() || 'Marcador';
+      const secret = box.querySelector('#mSecret').checked;
+      const m = {id:'mk'+(markSeq++), kind:'marker', type:'pin', x:wx,y:wy, label, secret};
+      state().markers.push(m);
+      closeModal(); render();
+      toast('Marcador adicionado.');
+    });
+  });
+}
+function promptAddText(wx,wy){
+  openModal(`
+    <h3>Novo Texto</h3>
+    <label>Conteúdo</label><textarea id="mText" placeholder="Escreva uma anotação..."></textarea>
+    <label style="margin-top:10px;"><input type="checkbox" id="mSecret"> Secreto (somente Mestre)</label>
+    <div class="modal-actions">
+      <button class="btn" id="mCancel">Cancelar</button>
+      <button class="btn primary" id="mOk">Adicionar</button>
+    </div>
+  `, (box)=>{
+    box.querySelector('#mCancel').addEventListener('click', closeModal);
+    box.querySelector('#mOk').addEventListener('click', ()=>{
+      const text = box.querySelector('#mText').value.trim();
+      if(!text){ closeModal(); return; }
+      const secret = box.querySelector('#mSecret').checked;
+      const m = {id:'mk'+(markSeq++), kind:'marker', type:'text', x:wx,y:wy, text, secret};
+      state().markers.push(m);
+      closeModal(); render();
+      toast('Texto adicionado.');
+    });
+  });
+}
+
+/* ---- Interação com o canvas (pan, zoom, ferramentas) ---- */
+let isPointerDown=false, panStart=null, camStart=null, lastClickInfo=null;
+
+canvas.addEventListener('wheel', (e)=>{
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const sp = {x:e.clientX-rect.left, y:e.clientY-rect.top};
+  const factor = e.deltaY<0 ? 1.12 : 1/1.12;
+  setZoom(state().camera.zoom*factor, sp);
+}, {passive:false});
+
+document.getElementById('zoomSlider').addEventListener('input', (e)=>{
+  setZoom(e.target.value/100);
+});
+
+function getScreenPos(e){
+  const rect = canvas.getBoundingClientRect();
+  const t = e.touches ? e.touches[0] : e;
+  return {x:t.clientX-rect.left, y:t.clientY-rect.top};
+}
+
+canvas.addEventListener('mousedown', onPointerDown);
+canvas.addEventListener('mousemove', onPointerMove);
+window.addEventListener('mouseup', onPointerUp);
+canvas.addEventListener('touchstart', onPointerDown, {passive:false});
+canvas.addEventListener('touchmove', onPointerMove, {passive:false});
+window.addEventListener('touchend', onPointerUp);
+
+function onPointerDown(e){
+  e.preventDefault();
+  isPointerDown=true;
+  const sp = getScreenPos(e);
+  const wp = screenToWorld(sp.x, sp.y);
+  App.lastWorld = wp;
+  const tool = App.tool;
+
+  if(tool==='select'){
+    const tok = tokenAt(wp.x,wp.y);
+    if(tok && canDragToken(tok)){
+      App.drag = {mode:'moveToken', ref:tok, offX:wp.x-tok.x, offY:wp.y-tok.y};
+      selectObject('token', tok);
+      return;
+    }
+    const mk = markerAt(wp.x,wp.y);
+    if(mk){ selectObject('marker', mk); return; }
+    const dw = drawingAt(wp.x,wp.y);
+    if(dw){ selectObject('drawing', dw); return; }
+    // possível entrada em Brumafria (duplo clique)
+    if(App.currentSceneId==='world'){
+      const now = Date.now();
+      const loc = worldLocationAt(wp.x,wp.y);
+      if(loc && loc.scene && lastClickInfo && lastClickInfo.loc===loc.id && now-lastClickInfo.t<450){
+        switchScene(loc.scene);
+        lastClickInfo=null;
+        return;
+      }
+      if(loc){ lastClickInfo = {loc:loc.id, t:now}; }
+    }
+    clearSelection();
+    canvas.classList.add('dragging');
+    panStart = sp; camStart = {...state().camera};
+    App.drag = {mode:'pan'};
+  } else if(tool==='pan'){
+    canvas.classList.add('dragging');
+    panStart = sp; camStart = {...state().camera};
+    App.drag = {mode:'pan'};
+  } else if(tool==='addToken'){
+    promptAddToken(wp.x, wp.y);
+  } else if(tool==='pin'){
+    promptAddPin(wp.x, wp.y);
+  } else if(tool==='text'){
+    promptAddText(wp.x, wp.y);
+  } else if(tool==='draw'){
+    App.drag = {mode:'draw', preview:{type:'path', points:[{x:wp.x,y:wp.y}], color:'#b3491f', width:3}};
+  } else if(tool==='line'){
+    App.drag = {mode:'line', preview:{type:'line', x1:wp.x,y1:wp.y,x2:wp.x,y2:wp.y, color:'#b3491f', width:3}};
+  } else if(tool==='rect'){
+    App.drag = {mode:'rect', preview:{type:'rect', x1:wp.x,y1:wp.y,x2:wp.x,y2:wp.y, color:'#4a90d9', width:3}};
+  } else if(tool==='circle'){
+    App.drag = {mode:'circle', preview:{type:'circle', x:wp.x,y:wp.y,r:1, color:'#5f8a5a', width:3}};
+  } else if(tool==='erase'){
+    const dw = drawingAt(wp.x,wp.y,14);
+    if(dw){ state().drawings = state().drawings.filter(d=>d!==dw); render(); }
+    App.drag = {mode:'erase'};
+  } else if(tool==='revealFog'){
+    paintFog(wp.x,wp.y,true); render();
+    App.drag = {mode:'fogPaint', reveal:true};
+  } else if(tool==='hideFog'){
+    paintFog(wp.x,wp.y,false); render();
+    App.drag = {mode:'fogPaint', reveal:false};
+  }
+}
+function worldLocationAt(wx,wy){
+  for(const loc of WORLD.locations){
+    const r = loc.type==='poi'?10:16;
+    if(Math.hypot(loc.x-wx,loc.y-wy)<=r) return loc;
+  }
+  return null;
+}
+function onPointerMove(e){
+  const sp = getScreenPos(e);
+  const wp = screenToWorld(sp.x, sp.y);
+  App.lastWorld = wp;
+  if(!isPointerDown){ updateCoordsUI(); return; }
+  e.preventDefault();
+  const d = App.drag;
+  if(!d) return;
+  if(d.mode==='pan'){
+    const cam = state().camera;
+    cam.x = camStart.x - (sp.x-panStart.x)/cam.zoom;
+    cam.y = camStart.y - (sp.y-panStart.y)/cam.zoom;
+    render();
+  } else if(d.mode==='moveToken'){
+    d.ref.x = wp.x-d.offX; d.ref.y = wp.y-d.offY;
+    render();
+  } else if(d.mode==='draw'){
+    d.preview.points.push({x:wp.x,y:wp.y});
+    render();
+  } else if(d.mode==='line'){
+    d.preview.x2=wp.x; d.preview.y2=wp.y; render();
+  } else if(d.mode==='rect'){
+    d.preview.x2=wp.x; d.preview.y2=wp.y; render();
+  } else if(d.mode==='circle'){
+    d.preview.r = Math.hypot(wp.x-d.preview.x, wp.y-d.preview.y); render();
+  } else if(d.mode==='erase'){
+    const dw = drawingAt(wp.x,wp.y,14);
+    if(dw){ state().drawings = state().drawings.filter(x=>x!==dw); render(); }
+  } else if(d.mode==='fogPaint'){
+    paintFog(wp.x,wp.y,d.reveal); render();
+  }
+  updateCoordsUI();
+}
+function onPointerUp(){
+  if(!isPointerDown) return;
+  isPointerDown=false;
+  canvas.classList.remove('dragging');
+  const d = App.drag;
+  if(d && d.preview){
+    const st = state();
+    if(d.mode==='draw' && d.preview.points.length>1) st.drawings.push({id:'dw'+(drawSeq++), kind:'drawing', ...d.preview});
+    if(d.mode==='line') st.drawings.push({id:'dw'+(drawSeq++), kind:'drawing', ...d.preview});
+    if(d.mode==='rect') st.drawings.push({id:'dw'+(drawSeq++), kind:'drawing', ...d.preview});
+    if(d.mode==='circle' && d.preview.r>2) st.drawings.push({id:'dw'+(drawSeq++), kind:'drawing', ...d.preview});
+  }
+  App.drag = null;
+  render();
+}
+
+/* ---- Botões da barra superior/inferior ---- */
+document.getElementById('btnNew').addEventListener('click', newCurrentScene);
+document.getElementById('btnSave').addEventListener('click', saveCurrentScene);
+document.getElementById('btnLoad').addEventListener('click', loadCurrentScene);
+document.getElementById('btnExport').addEventListener('click', exportAll);
+document.getElementById('btnImport').addEventListener('click', ()=> document.getElementById('fileImport').click());
+document.getElementById('fileImport').addEventListener('change', (e)=>{
+  if(e.target.files[0]) importAll(e.target.files[0]);
+  e.target.value='';
+});
+document.getElementById('btnReset').addEventListener('click', resetEverything);
+document.getElementById('btnGrid').addEventListener('click', (e)=>{
+  App.layers.grid = !App.layers.grid;
+  e.target.classList.toggle('on', App.layers.grid);
+  buildLayerUI(); render();
+});
+document.getElementById('btnFogMaster').addEventListener('click', (e)=>{
+  App.layers.fog = !App.layers.fog;
+  e.target.classList.toggle('on', App.layers.fog);
+  buildLayerUI(); render();
+});
+document.getElementById('btnRevealAll').addEventListener('click', revealAllFog);
+document.getElementById('btnClearExplore').addEventListener('click', clearExploration);
+/* ---------------------- INICIALIZAÇÃO ---------------------- */
+function init(){
+  buildLayerUI();
+  setMode('gm');
+  switchScene('world');
+  resizeCanvas();
+  // tenta carregar mapas salvos automaticamente, se existirem
+  ['world','brumafria'].forEach(id=>{
+    const raw = localStorage.getItem('aethra_map_'+id);
+    if(raw){ try{ deserializeScene(id, JSON.parse(raw)); }catch(e){} }
+  });
+  render();
+}
+init();
+</script>
+</body>
+</html>
