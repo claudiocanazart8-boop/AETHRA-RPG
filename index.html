@@ -699,16 +699,12 @@ function fitView(){ animateCamera(fitBounds(), 500); }
    Veja o passo a passo completo na mensagem que acompanha este arquivo.
    Sem isso preenchido, o site funciona apenas como visor de mapa local
    (as telas de sala mostram um aviso explicando o que falta configurar). */
-  const firebaseConfig = {
-  apiKey: "AIzaSyDg4umOwwWkhxkduWi4fOafsU0V2oWoTpyU",
-  authDomain: "aethra-rpg.firebaseapp.com",
-  databaseURL: "https://aethra-rpg-default-rtdb.firebaseio.com",
-  projectId: "aethra-rpg",
-  storageBucket: "aethra-rpg.firebasestorage.app",
-  messagingSenderId: "45297608591",
-  appId: "1:45297608591:web:f836e1b21f2e66996d4dfa",
-  measurementId: "G-QBCRGK4Q0R"
+const firebaseConfig = {
+  apiKey: "SUA_API_KEY",
+  authDomain: "SEU_PROJETO.firebaseapp.com",
+  projectId: "SEU_PROJETO",
 };
+
 let fbApp=null, auth=null, db=null, myUid=null;
 let roomRef=null, charsRef=null;      // referências do Firestore (doc da sala / coleção de personagens)
 let charsUnsub=null, roomUnsub=null, pickUnsub=null; // funções para cancelar os listeners em tempo real
@@ -727,24 +723,14 @@ function initFirebase(){
 }
 function ensureAuth(){
   if(myUid) return Promise.resolve(myUid);
-
   return new Promise((resolve,reject)=>{
-    auth.onAuthStateChanged(user=>{
-      if(user){
-        myUid = user.uid;
-        resolve(myUid);
-      }
+    const off = auth.onAuthStateChanged(user=>{
+      if(user){ myUid=user.uid; off(); resolve(myUid); }
     });
-
-    auth.signInAnonymously()
-      .then(userCredential=>{
-        myUid = userCredential.user.uid;
-        resolve(myUid);
-      })
-      .catch(err=>{
-        console.error("ERRO FIREBASE AUTH:", err);
-        reject(err);
-      });
+    auth.signInAnonymously().catch(err=>{
+      console.error('Erro no login anônimo do Firebase:', err.code, err.message);
+      reject(err);
+    });
   });
 }
 function normalizeRoom(s){ return (s||'').trim().toLowerCase().replace(/[^a-z0-9\-_]+/g,'-'); }
@@ -1578,6 +1564,7 @@ function resizeImageToDataURL(file, size, cb){
   };
   reader.readAsDataURL(file);
 }
+
 /* ---------------------- 10. PAINEL DO MESTRE ---------------------- */
 function renderGmCharList(){
   const box = document.getElementById('gmCharList');
@@ -1618,6 +1605,7 @@ function enterScene(id){
     canvas.classList.remove('fading');
   }, prevId===id? 0 : 160);
 }
+
 /* ---------------------- 11. TELAS DE ENTRADA / FLUXO DE SALA ---------------------- */
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=> s.classList.add('hidden'));
@@ -1741,6 +1729,12 @@ function enterApp(){
 /* ---------------------- INICIALIZAÇÃO ---------------------- */
 function init(){
   document.getElementById('tabBar').style.display='none';
+  if(!window.firebase){
+    const warn = document.createElement('div');
+    warn.style.cssText='margin-top:16px;padding:10px 12px;border:1px solid #8a4a4a;background:rgba(138,74,74,.15);border-radius:6px;font-size:12px;color:#f0c8c8;text-align:left;';
+    warn.textContent = 'Os scripts do Firebase não carregaram (variável "firebase" não existe). Isso costuma acontecer ao abrir o arquivo direto do computador, ou com um bloqueador de anúncios/rastreadores ativo. Publique este arquivo em um endereço https:// (ex: GitHub Pages) e/ou desative bloqueadores nesta aba, depois recarregue.';
+    document.querySelector('#screenLanding .screen-card').appendChild(warn);
+  }
   const saved = loadSessionSaved();
   if(saved && saved.room){
     const btn = document.createElement('button');
